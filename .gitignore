@@ -1,5 +1,5 @@
 # FINDEX .gitignore
-# Agents & Coding Vibe - ignore all agent/config files EXCEPT AGENTS.md
+# Agents & Coding Vibe - ignore tool runtime, keep portfolio artifacts
 
 # ── Secrets & Credentials (never commit) ──────────────────
 .env
@@ -12,10 +12,14 @@ credentials.*
 *.p12
 *.pfx
 
-# ── Agents & Coding Vibe ─────────────────────────────────────
+# ── Agents & Coding Vibe (tool runtime - not portfolio) ─────
 .opencode/
 .specify/
+.codegraph/
 .config/
+opencode.jsonc
+specs/
+AGENTS.md
 .vscode/
 .idea/
 
