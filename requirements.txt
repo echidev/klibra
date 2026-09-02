@@ -1,0 +1,24 @@
+# FINDEX Data Platform — Python Dependencies
+# Generated from specs/001-findex-data-platform/plan.md
+# Install: pip install -r requirements.txt
+# Note: Terraform and GitHub Actions are separate tools
+
+# Python 3.14 compatible versions
+
+apache-airflow==3.3.1
+dbt-core>=1.11.0
+dbt-postgres>=1.11.0
+pyspark==3.5.9
+duckdb==1.5.5
+boto3>=1.35.0
+great-expectations>=0.18.0
+pandas>=2.2.0
+numpy>=2.0.0
+psycopg2-binary>=2.9.0
+requests>=2.32.0
+pytest>=8.0.0
+pytest-cov>=6.0.0
+minio>=7.2.0
+python-dotenv>=1.0.0
+sqlalchemy>=2.0.0
+alembic>=1.13.0

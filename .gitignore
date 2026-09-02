@@ -1,3 +1,87 @@
+# FINDEX .gitignore
+# Agents & Coding Vibe - ignore all agent/config files EXCEPT AGENTS.md
+
+# ── Secrets & Credentials (never commit) ──────────────────
+.env
+.env.*
+.env.*.local
+secrets.*
+credentials.*
+*.key
+*.pem
+*.p12
+*.pfx
+
+# ── Agents & Coding Vibe ─────────────────────────────────────
+.opencode/
+.specify/
+.config/
+.vscode/
+.idea/
+
+# ── Dependencies ──────────────────────────────────────────
+node_modules/
+
+# ── Python ────────────────────────────────────────────────
 venv/
 __pycache__/
-.env
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.whl
+
+# ── Infrastructure State (Terraform) ───────────────────────
+*.tfstate
+*.tfstate.*
+*.tfvars
+terraform.tfstate
+terraform.tfvars
+.terraform/
+.terraform.lock.tfstate
+
+# ── Logs & Runtime ────────────────────────────────────────
+*.log
+logs/
+log/
+__logs__/
+airflow_logs/
+dbt_logs/
+
+# ── Data & Cache ──────────────────────────────────────────
+data/
+*.parquet
+*.avro
+*.csv
+*.xlsx
+*.json
+!docs/**/*.json
+*.db
+*.sqlite
+*.sqlite3
+*.duckdb
+.duckdb/
+*.minio/
+minio_data/
+
+# ── Coverage & Test Artifacts ─────────────────────────────
+coverage/
+htmlcov/
+.coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+
+# ── Docker ────────────────────────────────────────────────
+docker-compose.override.yml
+.docker/
+
+# ── CI/CD (keep templates, ignore generated) ──────────────
+.github/workflows/*.generated.yml
+
+# ── Documentation Build ───────────────────────────────────
+_site/
+site/
+*.pdf
