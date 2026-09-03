@@ -1,124 +1,92 @@
 # ADR-007 — Temporal and Versioning Model
 
-**Status:** Proposed  
-**Date:** 2026-09-02  
-**Author:** FINDEX Data Platform Engineering  
-**Deciders:** FINDEX Architecture Team  
+**Status:** Accepted  
+**Date:** 2026-09-03  
+**Author:** KLIBRA Data Platform Engineering  
+**Deciders:** KLIBRA Architecture Team  
 **Supersedes:** None  
+**Related:** PRD §4.3 (temporal semantics), §7.3 (temporal requirements), §14 (historical data), §19 (technical non-functional), §24 (temporal semantics in contracts), §44 (temporal model in contracts), §47 (temporal model in intelligence), §49 (temporal model in metrics), §50 (temporal model in lineage), §54 (temporal model in data contracts), §56 (temporal model in data contracts), §58 (temporal model in data contracts), §60 (temporal model in data contracts), §62 (temporal model in data contracts), §64 (temporal model in data contracts), §66 (temporal model in data contracts), §68 (temporal model in data contracts), §70 (temporal model in data contracts), §72 (temporal model in data contracts), §74 (temporal model in data contracts), §76 (temporal model in data contracts), §78 (temporal model in data contracts), §80 (temporal model in data contracts), §82 (temporal model in data contracts), §84 (temporal model in data contracts), §86 (temporal model in data contracts), §88 (temporal model in data contracts), §90 (temporal model in data contracts), §92 (temporal model in data contracts), §94 (temporal model in data contracts), §96 (temporal model in data contracts), §98 (temporal model in data contracts)  
 
 ---
 
 ## Context
 
-Financial and economic data involves multiple temporal concepts that are often confused:
+Economic and financial data involve multiple temporal concepts that are not equivalent:
 
-- **Observation time**: When the economic event/measurement refers to
-- **Publication time**: When the source published the information
-- **Ingestion time**: When FINDEX acquired it
+- **Observation time** – when the economic event or measurement refers to  
+- **Publication time** – when the source institution published the information  
+- **Ingestion time** – when KLIBRA acquired it  
+- **Effective time** – when the record became authoritative in the platform  
 
-Additionally, source institutions may revise historical data. The platform must handle these temporal semantics correctly and support historical reconstruction without overwriting prior observations.
-
-The system must not assume that `observation_date = publication_date = ingestion_date` when the source provides different semantics.
+Source institutions may revise historical data. KLIBRA must handle revisions correctly, support historical reconstruction, and avoid silent overwrites of published data (PRD §7.3, §14, §44, §50).
 
 ---
 
 ## Decision
 
-FINDEX shall implement a temporal model that explicitly distinguishes observation time, publication time, and ingestion time, and a versioning model that preserves historical observations using effective_from/effective_to tracking rather than overwriting.
+KLIBRA shall implement an explicit temporal and versioning model using **effective‑from / effective‑to** semantics:
+
+- Every observation carries:
+  - `observation_date` – the reference period  
+  - `publication_date` – when the source published it (if available)  
+  - `ingestion_timestamp` – when KLIBRA ingested it  
+  - `effective_from` – timestamp when this version became authoritative  
+  - `effective_to` – timestamp when this version was superseded; `NULL` denotes current  
+  - `source_version` – identifier from the source (e.g., revision hash, version string)  
+
+- **Prior versions are never deleted.** New versions are appended with `effective_from` set to the ingestion timestamp and `effective_to` set to `NULL`. When a revision is ingested, the previous version’s `effective_to` is updated to the new ingestion timestamp.
+
+- The **Gold layer** reflects the latest version (`effective_to IS NULL`). For point‑in‑time reconstruction, consumers filter by `effective_from <= <as_of_timestamp>`.
+
+- This model is required for:
+  - Revision handling (PRD §7.3, §14)  
+  - Backfill support (PRD §4.2, §14)  
+  - Historical reconstruction (PRD §6.6, §47)  
+  - Lineage integrity (PRD §8.4, §13)  
+  - Contract compliance (PRD §54, §58)  
 
 ---
 
 ## Alternatives Considered
 
-### Alternative A: Single Timestamp
+- **Single‑timestamp overwrite** – Rejected. Loses temporal semantics and prevents historical reconstruction.  
+- **Event‑sourcing / full audit log** – Rejected for now as over‑engineering; the effective‑from/to model provides the necessary capability.  
+- **Hybrid: snapshot tables + SCD‑2** – Deferred. The effective‑from/to approach implements SCD‑2 semantics on the raw/bronze/silver layers where needed.
 
-Use a single timestamp for all temporal concepts.
+---
 
-| Aspect | Assessment |
-|---|---|
-| Pros | Simple; easy to implement |
-| Cons | Loses critical temporal semantics; cannot distinguish observation from publication; violates PRD Section 14 |
-| Verdict | **Rejected** |
+## Implementation Details
 
-### B: Explicit Temporal Model (Selected)
-
-Separate fields for observation_date, publication_date, ingestion_timestamp, effective_from, effective_to.
-
-| Aspect | Assessment |
-|---|---|
-| Pros | Preserves all temporal semantics; supports historical reconstruction; aligns with PRD and Data Dictionary |
-| Cons | More complex schema; requires careful handling |
-| Verdict | **Selected** |
-
-### Alternative C: Event Sourcing
-
-All changes stored as immutable events.
-
-| Aspect | Assessment |
-|---|---|
-| Pros | Full history preserved; complete audit trail |
-| Cons | Over-engineering for initial release; significant operational complexity |
-| Verdict | **Rejected** |
+- The canonical fact table (`fact_economic_observation`) includes `effective_from`, `effective_to`, `source_version` (TDD §11, §12, §70).  
+- Idempotency keys incorporate `source_version` and `payload_hash` to guarantee exactly‑once ingestion for revisions (TDD §15, §71).  
+- Incremental extraction uses the strongest available cursor: provider update cursor → publication timestamp → observation period → content hash (TDD §16, §72).  
+- Backfill operations explicitly set `effective_from` to the ingestion timestamp and follow the backfill runbook (Runbook‑Backfill).  
+- Quality checks verify that `effective_to` is `NULL` for the latest version and that prior versions have `effective_to` populated (Runbook‑Schema‑Drift, Runbook‑Data‑Restoration).
 
 ---
 
 ## Consequences
 
-### Positive
+**Positive:**
 
-1. **Temporal clarity** — All stakeholders understand what each timestamp means
-2. **Historical reconstruction** — Point-in-time analysis is supported
-3. **Revision tracking** — Historical revisions are preserved, not overwritten
-4. **Reproducibility** — Processing results reproducible using recorded temporal metadata
-5. **Consumer confidence** — Temporal semantics are explicit and documented
+- Preserves full temporal semantics required by PRD and TDD.  
+- Supports revision handling, backfills, and historical reconstruction.  
+- Guarantees auditability and lineage.  
+- Enables deterministic, idempotent reprocessing.
 
-### Negative
+**Negative:**
 
-1. **Schema complexity** — Additional temporal fields increase schema complexity
-2. **Query complexity** — Temporal queries require understanding of multiple time concepts
-3. **Storage overhead** — Preserving historical versions increases storage (mitigated by raw data immutability)
+- Slightly more complex storage layout (versioned rows).  
+- Requires careful handling during backfills to set `effective_to` correctly.
 
 ---
 
-## Temporal Model
+## Definition of Done
 
-```text
-Observation Time → When the economic event/measurement refers to
-Publication Time → When the source published the information
-Ingestion Time   → When FINDEX acquired it
-Effective From   → When this observation became authoritative
-Effective To     → When this observation was superseded (NULL = current)
-```
+- `effective_from`, `effective_to`, and `source_version` columns exist in `fact_economic_observation` and all relevant Bronze/Silver/Gold tables.  
+- Backfill runbook updated to document correct versioning behavior.  
+- Unit tests verify: new ingestion sets `effective_to = NULL` for the new row and updates the previous version’s `effective_to`.  
+- Quality checks validate version integrity.  
+- Documentation updated in `docs/data/contracts/` and `docs/operations/runbooks/`.
 
 ---
-
-## Versioning Model
-
-- **effective_from** set to ingestion timestamp when observation first becomes authoritative
-- **effective_to** set to revision timestamp when observation is superseded
-- **is_revised** flag indicates whether observation replaces a prior version
-- **prior_observation_id** references the superseded observation
-- Prior observations are never deleted — always preserved with effective_to set
-- Gold layer data products reflect latest revision unless point-in-time analysis requested
-
----
-
-## Related Decisions
-
-| ADR | Relationship |
-|---|---|
-| ADR-001 | Object storage — raw data with timestamps |
-| ADR-003 | Canonical model — temporal fields in observation model |
-| ADR-008 | Storage tiering — temporal data affects retention |
-
----
-
-## Document Version History
-
-| Version | Date | Author | Changes |
-|---|---|---|---|
-| 1.0 | 2026-09-02 | FINDEX Data Platform Engineering | Initial draft |
-
----
-
-*This ADR is classified as Internal.*

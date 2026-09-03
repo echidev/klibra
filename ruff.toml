@@ -1,0 +1,48 @@
+# ruff.toml — KLIBRA Python linter / formatter config
+# Aligned with AGENTS.md §1.3 and pyproject.toml [tool.ruff] block.
+# This file is kept for editors / pre-commit hooks that read it directly.
+
+line-length = 100
+target-version = "py311"
+
+src = [
+    "ingestion",
+    "transformation",
+    "semantic",
+    "intelligence",
+    "orchestration",
+    "tests",
+]
+
+[lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line length handled by formatter
+    "B008",  # function-call-in-default-argument (common in Airflow)
+]
+
+[lint.isort]
+known-first-party = [
+    "klibra",
+    "ingestion",
+    "transformation",
+    "semantic",
+    "intelligence",
+    "orchestration",
+]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+docstring-code-format = true

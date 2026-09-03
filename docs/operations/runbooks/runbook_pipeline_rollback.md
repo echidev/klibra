@@ -1,111 +1,93 @@
 # Runbook — Pipeline Rollback
 
 **Document Type:** Operational Runbook  
-**Product:** FINDEX  
-**Status:** Draft  
-**Version:** 1.0  
-**Date:** 2026-09-02  
-**Owner:** Data Engineering Team  
+**Product:** KLIBRA  
+**Status:** Active  
+**Version:** 2.0  
+**Date:** 2026-09-03  
+**Owner:** KLIBRA Data Platform Engineering  
 **Classification:** Internal  
+**Related:** PRD §57 (CI/CD), §76 (rollback); TDD §33 (pipeline), §49 (deployment)  
 
 ---
 
 ## 1. Purpose
 
-This runbook provides procedures for rolling back a pipeline to a previous version when the current version produces incorrect results, introduces bugs, or causes operational issues.
+Define the procedure for rolling back a KLIBRA pipeline to a previous stable version when a new deployment causes failures or data corruption.
 
 ---
 
-## 2. Triggers
+## 2. Detection
 
-- Pipeline produces incorrect data after deployment
-- Pipeline fails consistently after deployment
-- New transformation logic introduces data quality issues
-- Schema change causes downstream failures
-- Security vulnerability discovered in pipeline code
-- Performance degradation after deployment
+- Airflow DAG failure after deployment.
+- Quality‑gate P0/P1 violation on newly published data.
+- Downstream consumer reports data anomalies.
+- Monitoring alert indicating pipeline runtime spike or error surge.
 
 ---
 
-## 3. Pre-Rollback Assessment
+## 3. Preparation
 
-1. Identify the current pipeline version and the target rollback version
-2. Assess what changed between versions
-3. Determine scope of rollback (single dataset or multiple)
-4. Evaluate impact on downstream data products
-5. Verify that the target version has been validated and tested
-6. Confirm rollback is approved by Data Owner and Technical Owner
-
----
-
-## 4. Procedure
-
-### 4.1 Preparation
-
-1. Document current state: version, run status, affected datasets
-2. Identify rollback target version with known good state
-3. Prepare rollback environment in staging
-4. Test rollback in staging first
-5. Validate that rolled-back version produces correct data
-6. Prepare communication for downstream consumers
-
-### 4.2 Execution
-
-1. Freeze new deployments for affected pipeline
-2. Deploy rollback version following CI/CD pipeline
-3. Rerun pipeline for affected periods
-4. Monitor execution to completion
-5. Verify idempotency (no duplicate records from rerun)
-
-### 4.3 Post-Rollback Validation
-
-1. Verify data quality is ACCEPTED
-2. Verify record count matches expected historical baseline
-3. Run reconciliation against source data
-4. Verify downstream data products are correct
-5. Confirm lineage is intact
-6. Verify no data was lost or corrupted
-7. Validate freshness is within SLA
+1. Identify the **failed deployment version** (Git tag / Docker image tag).
+2. Determine the **last known good version** (previous tag).
+3. Ensure the previous version's artifacts (container image, Terraform state) are available.
+4. Notify Technical Owner, Data Owner, and Business Owner.
+5. Create a rollback ticket in the issue tracker.
 
 ---
 
-## 5. Critical Rules
+## 4. Rollback Steps
 
-1. **Always test rollback in staging before production.**
-2. **Never rollback without documented approval.**
-3. **Preserve all version history and deployment records.**
-4. **Rollback must maintain immutability of raw data.**
-5. **Rollback must be observable and auditable.**
+### 4.1 Staging Validation
 
----
+1. Deploy the previous version to **staging** via CI/CD.
+2. Run **integration tests** and **quality checks**.
+3. Verify that all affected datasets pass P0/P1 checks.
+4. Obtain **Data Owner sign‑off**.
 
-## 6. Communication
+### 4.2 Production Rollback
 
-- Notify Technical Owner and Data Owner before rollback
-- Notify Business Owner if published data is affected
-- Notify downstream consumers if data products change
-- Document rollback reason, target version, and results
-- Update deployment log
+1. Trigger the **rollback deployment** in CI/CD (use `git revert` or checkout previous tag).
+2. Apply the corresponding **Terraform plan** to revert infrastructure changes if any.
+3. Deploy the previous container image to the production environment.
+4. Re‑run the affected Airflow DAGs with the rolled‑back code.
+5. Monitor for successful completion and absence of errors.
 
----
+### 4-3 Post‑Rollback Validation
 
-## 7. Post-Rollback Actions
-
-1. Investigate root cause of failure in new version
-2. Fix issues before redeploying new version
-3. Add tests for the root cause
-4. Update deployment checklist
-5. Document lessons learned
-6. Schedule redeployment of fixed version when ready
+1. Verify **quality checks** (P0/P1) pass for all affected datasets.
+2. Confirm **lineage** reflects the rolled‑back version.
+3. Run downstream consumer acceptance tests.
+4. Record the rollback event in the incident management system.
 
 ---
 
-## 8. Document Version History
+## 5. Communication
+
+- Immediate alert to Technical Owner and Data Owner.
+- Update stakeholders on rollback status and ETA.
+- Notify downstream consumers once the rollback completes and data is stable.
+- Document root cause and remediation steps for future prevention.
+
+---
+
+## 6. Post‑Rollback
+
+1. Conduct a **post‑mortem** to understand why the deployment failed.
+2. Update **Change Management Process** with findings.
+3. Add regression tests if missing.
+4. Review CI/CD pipeline for gaps (e.g., missing tests).
+5. Close the rollback ticket after verification.
+
+---
+
+## 7. Document Version History
 
 | Version | Date | Author | Changes |
-|---|---|---|---|
-| 1.0 | 2026-09-02 | FINDEX Data Engineering | Initial draft |
+| --- | --- | --- | --- |
+| 1.0 | 2026-09-02 | FINDEX Data Engineering | Initial draft (FINDEX) |
+| 2.0 | 2026-09-03 | KLIBRA Data Platform Engineering | Re‑aligned to KLIBRA PRD v2.0 / TDD v2.0; added staging validation and post‑mortem steps |
 
 ---
 
-*This document is classified as Internal.*
+*This document is classified as Internal. Distribution is restricted to authorized KLIBRA team members and stakeholders.*

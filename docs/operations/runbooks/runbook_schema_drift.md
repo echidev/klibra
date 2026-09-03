@@ -1,140 +1,116 @@
 # Runbook — Schema Drift
 
 **Document Type:** Operational Runbook  
-**Product:** FINDEX  
-**Status:** Draft  
-**Version:** 1.0  
-**Date:** 2026-09-02  
-**Owner:** Data Engineering Team  
+**Product:** KLIBRA  
+**Status:** Active  
+**Version:** 2.0  
+**Date:** 2026-09-03  
+**Owner:** KLIBRA Data Platform Engineering  
 **Classification:** Internal  
+**Related:** PRD §19 (schema drift), §29 (data contracts); TDD §19 (schema evolution), §23 (quality)  
 
 ---
 
 ## 1. Purpose
 
-This runbook provides procedures for detecting, classifying, investigating, and responding to schema changes in external data sources.
+Provide procedures for handling schema drift—unexpected changes in source schema that may break pipelines or data contracts.
 
 ---
 
 ## 2. Detection
 
-- Automated schema validation fails during ingestion
-- Connector detects missing fields, new fields, or type mismatches
-- Data contract validation fails
-- Airflow task fails with schema-related error
+- Schema‑drift detection alert (e.g., new column, type change).
+- Airflow task failure with `error_type = SchemaDrift`.
+- Quality‑gate failure due to unexpected field.
+- Manual audit discovers mismatched schema between source and contract.
 
 ---
 
-## 3. Classification
+## 3. Diagnosis
 
-Classify the schema change per TDD Section 19:
-
-| Change Class | Examples | Action |
-|---|---|---|
-| **Compatible** | New nullable field, metadata-only change | Accept; update schema; no consumer impact |
-| **Potentially Breaking** | Type widening/narrowing, new required field, changed categorical values | Investigate; adapt transformation; validate before publication |
-| **Breaking** | Removed field, semantic redefinition, structural incompatibility | Stop pipeline; investigate; controlled deployment required |
-
----
-
-## 4. Investigation
-
-### 4.1 Assess the Change
-
-1. Retrieve the new source schema
-2. Compare with previous schema version
-3. Map changes to classification (compatible, potentially breaking, breaking)
-4. Identify affected downstream datasets and fields
-5. Assess impact on business definitions and metrics
-
-### 4.2 Check Source Notification
-
-1. Check if source institution announced the change
-2. Review source documentation for updates
-3. Contact source institution if change is undocumented
-4. Document all findings
+1. Identify the **source** and **dataset** exhibiting drift.
+2. Compare the **current source schema** (via connector metadata) to the **recorded schema** in the data contract.
+3. Classify the change:
+   - **Compatible** (e.g., new nullable field, metadata‑only change).
+   - **Potentially Breaking** (e.g., type widening, new required field).
+   - **Breaking** (e.g., removed field, type narrowing, changed enumeration).
+4. Determine impact on:
+   - Bronze ingestion.
+   - Silver standardization.
+   - Gold business logic.
+5. Check recent **source change management** entries.
 
 ---
 
-## 5. Containment
+## 4. Containment
 
-1. If breaking: halt pipeline to prevent publishing incorrect data
-2. If potentially breaking: quarantine affected records pending resolution
-3. Alert Technical Owner and Data Owner
-4. Document the drift in incident management system
-
----
-
-## 6. Resolution
-
-### 6.1 Compatible Changes
-
-1. Update connector to accept new fields
-2. Update schema documentation
-3. Update data dictionary if new fields have semantic meaning
-4. Validate pipeline produces correct output
-5. Publish with updated metadata
-
-### 6.2 Potentially Breaking Changes
-
-1. Adapt transformation logic
-2. Update data contract if constraints change
-3. Update data dictionary
-4. Test in staging environment
-5. Validate output against business expectations
-6. Publish with documentation of changes
-
-### 6.3 Breaking Changes
-
-1. Initiate change management process (per governance/change_management_process.md)
-2. Evaluate backward compatibility strategy
-3. Update connector and transformation
-4. Update data contract and data dictionary
-5. Notify all affected consumers with minimum 14-day lead time
-6. Prepare migration plan for consumers
-7. Prepare rollback plan
-8. Deploy following approval gate
-9. Validate post-deployment
+1. Pause the affected Airflow DAG.
+2. Quarantine any partially processed data.
+3. Alert Technical Owner, Data Owner, and Data Governance.
+4. Notify downstream consumers of possible data quality impact.
 
 ---
 
-## 7. Validation
+## 5. Resolution
 
-1. Verify schema matches updated contract
-2. Run all data quality checks
-3. Validate business rules
-4. Verify lineage is updated
-5. Confirm consumer access to updated data
-6. Check for data gaps during the drift period
+### 5.1 Compatible Change
 
----
+- Update the **source catalog** to reflect new optional fields.
+- No pipeline code change required.
+- Run a **schema validation test** to ensure compatibility.
 
-## 8. Communication
+### 5.2 Potentially Breaking Change
 
-- Alert Technical Owner immediately upon detection
-- Notify Data Owner within 1 hour
-- Notify Business Owner for breaking changes
-- Update Source Catalog with change details
-- Document in change log
+1. Update the **data contract** to include the new field definition (nullable if appropriate).
+2. Adjust transformation code to handle the new field (e.g., default values, type casting).
+3. Run unit and integration tests in staging.
+4. Deploy the updated contract and code via CI/CD.
+5. Re‑process affected periods if needed.
 
----
+### 5.3 Breaking Change
 
-## 9. Prevention
-
-1. Implement automated schema drift detection
-2. Set up schema validation in pipeline
-3. Monitor source documentation for changes
-4. Maintain field mapping registry
-5. Add schema change alerts to monitoring
+1. **Engage the Source Owner** to understand the change rationale.
+2. If possible, request a **fallback** to the previous schema or provide a migration path.
+3. Update the **data contract** with the new required fields and deprecate old ones.
+4. Implement **migration logic** (e.g., map old field to new, default values).
+5. Conduct a full **backfill** for the affected periods (Runbook‑Backfill).
+6. Validate quality checks and lineage.
 
 ---
 
-## 10. Document Version History
+## 6. Validation
+
+1. Verify **schema validation** passes for Bronze and Silver layers.
+2. Run all **quality checks** (P0/P1) – must pass.
+3. Confirm **lineage** captures the schema version used.
+4. Ensure downstream Gold products are unchanged (or updated if intentional).
+
+---
+
+## 7. Communication
+
+- Immediate alert to Technical Owner, Data Owner, Data Governance.
+- Status updates during investigation and remediation.
+- Final communication to Business Owner and downstream consumers.
+
+---
+
+## 8. Prevention
+
+- Enable **schema‑drift monitoring** (run daily schema comparison).
+- Require **contract update** for any source schema change (Change Management Process).
+- Add **unit tests** for schema compatibility.
+- Conduct **impact analysis** before accepting source changes.
+
+---
+
+## 9. Document Version History
 
 | Version | Date | Author | Changes |
-|---|---|---|---|
-| 1.0 | 2026-09-02 | FINDEX Data Engineering | Initial draft |
+| --- | --- | --- | --- |
+| 1.0 | 2026-09-02 | FINDEX Data Engineering | Initial draft (FINDEX) |
+| 2.0 | 2026-09-03 | KLIBRA Data Platform Engineering | Updated for KLIBRA PRD v2.0 / TDD v2.0; added classification of changes, backfill steps, and prevention measures |
 
 ---
 
-*This document is classified as Internal.*
+*This document is classified as Internal. Distribution is restricted to authorized KLIBRA team members and stakeholders.*

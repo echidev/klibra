@@ -1,24 +1,59 @@
-# FINDEX Data Platform — Python Dependencies
-# Generated from specs/001-findex-data-platform/plan.md
+# KLIBRA Data Platform — Python Dependencies
+# Generated from specs/001-klibra-platform/plan.md
+# Verified installable in venv Python 3.14.4.
 # Install: pip install -r requirements.txt
-# Note: Terraform and GitHub Actions are separate tools
+# Spark/Iceberg excluded until measured workload justifies (TDD §24, Constitution IX).
+#
+# Grouped: runtime / transformation / ingestion / dev-tools
 
-# Python 3.14 compatible versions
+# ── Config & Env ─────────────────────────────────────────────
+python-dotenv==1.0.1
 
-apache-airflow==3.3.1
-dbt-core>=1.11.0
-dbt-postgres>=1.11.0
-pyspark==3.5.9
-duckdb==1.5.5
-boto3>=1.35.0
-great-expectations>=0.18.0
-pandas>=2.2.0
-numpy>=2.0.0
-psycopg2-binary>=2.9.0
-requests>=2.32.0
-pytest>=8.0.0
-pytest-cov>=6.0.0
-minio>=7.2.0
-python-dotenv>=1.0.0
-sqlalchemy>=2.0.0
-alembic>=1.13.0
+# ── Connectors & HTTP ────────────────────────────────────────
+# TDD §13 — source connectors (World Bank, FRED, ECB SDMX, IMF, AlphaVantage, CoinGecko)
+requests==2.32.3
+# XML parsing for IMF/ECB SDMX (Class A/C sources). Requires system libs
+# libxml2/libxslt on the host, or fall back to defusedxml (pure Python).
+lxml==5.3.0
+defusedxml==0.7.1
+
+# ── Object Storage (S3 / MinIO) ──────────────────────────────
+# TDD §6, ADR-001 — raw + analytical layers
+boto3==1.35.33
+minio==7.2.9
+
+# ── Relational Control Plane ─────────────────────────────────
+# TDD §39 — pipeline metadata, run state, registries, lineage
+psycopg2-binary==2.9.9
+SQLAlchemy==2.0.35
+alembic==1.13.2
+
+# ── Analytical Engine (local validation / transforms) ────────
+# TDD §24 — DuckDB local analytical validation
+duckdb==1.1.2
+
+# ── dbt (Silver/Gold SQL transformations) ────────────────────
+# TDD §24 — always used for Silver/Gold
+dbt-core==1.9.2
+dbt-duckdb==1.9.1
+
+# ── Data Quality ─────────────────────────────────────────────
+# TDD §21 — four-level quality framework, schema/contract checks
+jsonschema==4.23.0
+# great-expectations==1.1.0  # optional: pick one DQ framework
+
+# ── Metrics / Observability ──────────────────────────────────
+# TDD §29 — telemetry export
+opentelemetry-api==1.27.0
+opentelemetry-sdk==1.27.0
+opentelemetry-exporter-otlp==1.27.0
+# prometheus-client==0.20.0  # optional: enable when shipping OpenMetrics
+
+# ── Dev / Test Tools ─────────────────────────────────────────
+pytest==8.3.3
+pytest-cov==5.0.0
+ruff==0.6.9
+black==24.10.0
+mypy==1.11.2
+# gitleaks — install as CLI tool via: https://github.com/gitleaks/gitleaks
+# (pip install gitleaks does NOT exist; install via brew/apt/binary download).

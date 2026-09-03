@@ -1,109 +1,88 @@
 # ADR-003 — Canonical Data Model Strategy
 
-**Status:** Proposed  
-**Date:** 2026-09-02  
-**Author:** FINDEX Data Platform Engineering  
-**Deciders:** FINDEX Architecture Team  
+**Status:** Accepted  
+**Date:** 2026-09-03  
+**Author:** KLIBRA Data Platform Engineering  
+**Deciders:** KLIBRA Architecture Team  
 **Supersedes:** None  
+**Related:** PRD §11 (data products); TDD §11 (canonical model)  
 
 ---
 
 ## Context
 
-FINDEX ingests data from multiple authoritative sources (OJK, BI, BPS) that use different structures, terminology, classifications, and granularities. Without a unifying model, downstream consumers would need to understand and reconcile these differences, defeating the purpose of a governed data platform.
-
-The platform must provide a single, standardized view of financial data while preserving source-specific detail in the Bronze layer.
+KLIBRA ingests heterogeneous data from multiple public sources, each with its own schema, identifiers, units, and temporal conventions (PRD §10.1‑§10.5). A unified, observation‑centric model enables cross‑source analysis, reproducibility, and lineage (TDD §11‑§12).
 
 ---
 
 ## Decision
 
-FINDEX shall adopt an observation-centric canonical data model as the unifying structure for all financial and macroeconomic data. The model defines a core fact table (`fact_financial_observation`) and supporting dimensions (`dim_metric`, `dim_entity`, `dim_geography`, `dim_sector`, `dim_source`, `dim_dataset`, `dim_calendar`).
+Adopt a **canonical observation model** (`fact_economic_observation`) with supporting dimension tables. The model is defined as:
 
-Where source data is compatible, it is mapped to this canonical model. Source-specific structures are preserved in the Raw and Bronze layers. The canonical model is defined in the Data Dictionary and is subject to refinement as source data is profiled.
+```text
+fact_economic_observation
+--------------------------
+observation_id            UUID primary key
+metric_id                 FK → dim_metric.metric_id
+entity_id                 FK → dim_entity.entity_id
+geography_id              FK → dim_geography.geography_id
+sector_id                 FK → dim_sector.sector_id
+observation_date          DATE (Observation Time)
+value                     DECIMAL
+unit                      STRING
+source_id                 FK → dim_source.source_id
+dataset_id                FK → dim_dataset.dataset_id
+publication_date          DATE (Publication Time)
+ingestion_timestamp       TIMESTAMP (Ingestion Time)
+effective_from            TIMESTAMP (effective start)
+effective_to              TIMESTAMP (effective end, NULL=active)
+source_version            STRING (source revision identifier)
+quality_status            ENUM('ACCEPTED','ACCEPTED_WARNING','QUARANTINED','REJECTED')
+```
+
+Supporting dimensions (`dim_metric`, `dim_entity`, `dim_geography`, `dim_sector`, `dim_source`, `dim_dataset`, `dim_calendar`) capture static metadata, grain, and lineage (PRD §27, TDD §11‑§12).
 
 ---
 
 ## Alternatives Considered
 
-### Alternative A: Source-Aligned Models
+- **Source‑Aligned Models** — Rejected. Hinders cross‑source reconciliation and metric consistency.
+- **Canonical Observation Model (Selected)** — Aligns with PRD’s goal of unified economic intelligence and satisfies TDD’s temporal and versioning requirements.
+- **Star‑Schema Only** — Rejected. Does not capture the full temporal semantics needed for revision handling (TDD §70).
 
-Each downstream layer preserves source-specific structures.
+---
 
-| Aspect | Assessment |
-|---|---|
-| Pros | No mapping needed; preserves source fidelity |
-| Cons | Consumers must understand every source structure; no standardization; defeats platform purpose |
-| Verdict | **Rejected** — Contradicts platform objective of standardization |
+## Implementation Details
 
-### B: Canonical Observation Model (Selected)
-
-A single observation-centric model unifies all sources.
-
-| Aspect | Assessment |
-|---|---|
-| Pros | Standardized consumer interface; semantic consistency; supports cross-source analysis; traceability preserved |
-| Cons | Mapping effort for each source; some metrics may not map cleanly |
-| Verdict | **Selected** — Aligns with platform vision and Data Dictionary |
-
-### Alternative C: Star Schema Only
-
-Traditional star schema with fact and dimension tables.
-
-| Aspect | Assessment |
-|---|---|
-| Pros | Well-understood; good query performance |
-| Cons | Less flexible for financial time-series data; observation-centric model better supports temporal semantics |
-| Verdict | **Rejected** — Observation model better serves FINDEX temporal requirements |
+- The model is defined in `docs/data/data_dictionary.md` and version‑controlled.
+- New metrics added to `dim_metric` with full definition (name, description, grain, unit, formula) per PRD §27 and TDD §63.
+- Source‑specific fields are retained in `raw/` and `bronze/` layers for auditability.
+- Transformation logic from Bronze to Silver maps source fields onto the canonical model, applying unit conversion, entity mapping, and temporal alignment (TDD §7‑§12).
+- Effective‑from/effective‑to fields enable **point‑in‑time reconstruction** (TDD §70) and support **historical backfills** (Runbook‑Backfill).
 
 ---
 
 ## Consequences
 
-### Positive
+**Positive:**
 
-1. **Standardization** — All data consumers use the same canonical structure
-2. **Cross-source analysis** — Compatible sources can be compared and combined
-3. **Traceability** — Source-to-canonical mappings are documented
-4. **Flexibility** — Source-specific detail preserved in Bronze layer
-5. **Consumer simplicity** — Downstream users interact with canonical model, not source structures
-6. **Extensibility** — New sources map to canonical model without restructuring downstream consumers
+- Enables cross‑source metric reconciliation (PRD §23, TDD §23).
+- Provides deterministic, reproducible lineage.
+- Supports revision‑aware historical queries and backfills.
+- Simplifies downstream consumption: Gold products expose a stable, well‑documented schema.
 
-### Negative
+**Negative:**
 
-1. **Mapping effort** — Each source requires field mapping and transformation logic
-2. **Incompatible sources** — Some source data may not map cleanly; handled via Bronze layer
-3. **Model evolution** — Canonical model may need to expand as new sources are onboarded
+- Requires upfront effort to map all source schemas.
+- May increase processing complexity in Silver layer.
+- Changing the model later incurs migration effort; mitigated by ADR‑007 (temporal/versioning) and ADR‑008 (storage tiering).
 
 ---
 
-## Model Governance
+## Definition of Done
 
-- Canonical model defined in `docs/data/data_dictionary.md`
-- Model changes follow change management process
-- New metrics added to `dim_metric` with full definition
-- Mapping from source fields to canonical fields documented in Data Dictionary
-- Model version controlled alongside Data Dictionary
-
----
-
-## Related Decisions
-
-| ADR | Relationship |
-|---|---|
-| ADR-001 | Object storage — canonical model data stored in object storage |
-| ADR-002 | Source ingestion interface — connector output maps to canonical model |
-| ADR-005 | Transformation framework — dbt transforms Bronze to Silver using canonical model |
-| Data Dictionary | Defines the canonical model in detail |
-
----
-
-## Document Version History
-
-| Version | Date | Author | Changes |
-|---|---|---|---|
-| 1.0 | 2026-09-02 | FINDEX Data Platform Engineering | Initial draft |
-
----
-
-*This ADR is classified as Internal.*
+- `fact_economic_observation` and all dimension tables are created in the `silver/` layer using dbt models.
+- Unit tests cover field mapping, unit conversion, and temporal alignment.
+- Data contracts for the canonical model are stored under `docs/data/contracts/gold/` and enforced by CI.
+- Documentation updated in `docs/data/data_dictionary.md`.
+- Review sign‑off from Data Governance and Technical Owner.

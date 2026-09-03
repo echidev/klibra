@@ -1,130 +1,85 @@
 # ADR-006 — Cloud Deployment Strategy
 
-**Status:** Proposed  
-**Date:** 2026-09-02  
-**Author:** FINDEX Data Platform Engineering  
-**Deciders:** FINDEX Architecture Team  
+**Status:** Accepted  
+**Date:** 2026-09-03  
+**Author:** KLIBRA Data Platform Engineering  
+**Deciders:** KLIBRA Architecture Team  
 **Supersedes:** None  
+**Related:** PRD §40 (deployment), §54 (infrastructure), §55 (release), §57 (CI/CD), §65 (security), §67 (runbooks), §69 (load testing), §71 (product readiness), §72 (cost management), §73 (technical debt), §74 (DR), §75 (logging), §78 (engineering), §80 (code review), §84 (security checklist), §86 (incident), §88 (architecture freeze), §94 (audit)...  
 
 ---
 
 ## Context
 
-FINDEX must support both local development and production cloud deployment. The platform needs cloud services for scalable data processing, serverless querying, managed orchestration, and secure infrastructure. Cloud cost must remain controlled, and managed services should be justified by workload requirements.
+KLIBRA requires a cloud deployment that:
+
+- Reproducible via IaC (TDD §34).
+- Securely isolate environments (PRD §53, §65).
+- Cost‑effective for academic/pilot workload (PRD §72).
+- Support local development parity (TDD §35).
+- Managed services justified by measured workload (TDD §94).
 
 ---
 
 ## Decision
 
-FINDEX shall use AWS as the primary cloud provider for production deployment, with the following managed services where economically justified:
+Use **AWS as primary cloud** with selective managed services:
 
-- **S3** for object storage
-- **RDS PostgreSQL** for operational metadata
-- **Managed Airflow** (MWAA) for orchestration
-- **AWS Glue** for managed ETL where justified
-- **Athena** for serverless querying
-- **CloudWatch** for monitoring
-- **Secrets Manager** for secret management
-- **Terraform** for Infrastructure as Code
+| Capability | Service | Justification |
+| --- | --- | --- |
+| Object Storage | S3 (with lifecycle policies) | Durable, scalable, raw/archive |
+| Compute | EC2 or ECS for Airflow (or MWAA) | Orchestrated batch jobs |
+| Compute | EMR or SageMaker Studio (Spark) | Distributed processing when needed |
+| Database | RDS PostgreSQL (small) | Metadata, pipeline state |
+| Analytics | Athena (serverless) | Querying data in S3 |
+| Monitoring | CloudWatch / OpenTelemetry | Platform & data observability |
+| Secrets | Secrets Manager | Credential isolation |
+| IaC | Terraform | Reproducible infra |
 
-Local development uses Docker Compose with MinIO (S3-compatible) and local PostgreSQL, Airflow, Spark, dbt, and DuckDB.
+Local dev uses Docker Compose with MinIO (S3‑compatible), PostgreSQL, Airflow, Spark, dbt, DuckDB.
 
 ---
 
 ## Alternatives Considered
 
-### Alternative A: Full Managed Services
+- **Full Managed (Databricks + Redshift)** – Rejected: over‑engineered for current scale.
+- **Selective Managed (selected)** – Balanced cost & capability.
+- **Multi‑Cloud** – Rejected: premature complexity.
+- **On‑Prem Only** – Rejected: limited scalability, operational overhead.
 
-Use all available managed AWS services.
+---
 
-| Aspect | Assessment |
-|---|---|
-| Pros | Minimal operational overhead; auto-scaling |
-| Cons | Higher cost; vendor lock-in; may include unnecessary services |
-| Verdict | **Rejected** — Use managed services only where justified by workload |
+## Implementation Details
 
-### B: Selective Managed Services (Selected)
-
-Managed services where economically justified; self-managed where appropriate.
-
-| Aspect | Assessment |
-|---|---|
-| Pros | Cost-effective; justified services only; flexibility to adjust |
-| Cons | Mix of managed and self-managed requires careful management |
-| Verdict | **Selected** — Aligns with TDD cost management principles |
-
-### Alternative C: Multi-Cloud
-
-Use multiple cloud providers.
-
-| Aspect | Assessment |
-|---|---|
-| Pros | Avoids vendor lock-in; best-of-breed |
-| Cons | Significant complexity; higher cost; more operational overhead |
-| Verdict | **Rejected** — Premature for initial release |
-
-### Alternative D: On-Premises Only
-
-Self-hosted infrastructure without cloud.
-
-| Aspect | Assessment |
-|---|---|
-| Pros | Full control; no cloud costs |
-| Cons | Limited scalability; high operational overhead; no managed services |
-| Verdict | **Rejected** |
+- All infra defined in `infrastructure/terraform/`.
+- Environments: Dev, Staging, Prod (PRD §51, §53).
+- CI/CD via GitHub Actions (ADR‑012). Deployment: merge → build → deploy Staging → integration tests → approval → deploy Prod.
+- Secrets never in code (PRD §65, §78). Key rotation via Secrets Manager.
+- Cost monitoring via AWS Cost Explorer + budget alerts (PRD §72, §97).
 
 ---
 
 ## Consequences
 
-### Positive
+**Positive:**
 
-1. **Scalability** — Cloud scales with data and consumer growth
-2. **Cost control** — Selective managed services; Terraform for infrastructure control
-3. **Managed services** — Reduces operational burden for critical services
-4. **Local parity** — Docker Compose enables full local reproduction
-5. **Serverless options** — Athena and Glue reduce infrastructure management
+- Reproducible infra, easy env creation/teardown.
+- Cost visibility via AWS billing.
+- Managed Airflow reduces ops overhead.
+- Local dev parity via Docker + MinIO.
 
-### Negative
+**Negative:**
 
-1. **Cloud costs** — Must be monitored and controlled (lifecycle policies, query monitoring, budget alerts)
-2. **Vendor lock-in** — AWS-specific services; mitigated by Terraform and S3 compatibility
-3. **Complexity** — Mix of managed and self-managed services
+- AWS‑specific lock‑in (mitigated by using open standards where possible).
+- Initial learning curve for Terraform.
 
 ---
 
-## Cost Management
+## Definition of Done
 
-Cloud architecture includes cost controls:
-
-- Object lifecycle policies
-- Query monitoring
-- Partition optimization
-- Avoiding unnecessary scans
-- Scheduled resource usage
-- Environment shutdown policies
-- Budget alerts
-- Right-sized compute
-
----
-
-## Related Decisions
-
-| ADR | Relationship |
-|---|---|
-| ADR-001 | S3 as primary storage |
-| ADR-002 | Connectors deployed in cloud |
-| ADR-004 | Managed Airflow orchestration |
-| ADR-008 | Storage tiering for cost management |
-
----
-
-## Document Version History
-
-| Version | Date | Author | Changes |
-|---|---|---|---|
-| 1.0 | 2026-09-02 | FINDEX Data Platform Engineering | Initial draft |
-
----
-
-*This ADR is classified as Internal.*
+- Terraform modules for S3, RDS, EC2/ECS/MWAA, Athena, CloudWatch, Secrets Manager created and validated.
+- Local dev stack (Docker Compose) fully functional with MinIO, PostgreSQL, Airflow, dbt, DuckDB.
+- CI/CD pipeline (GitHub Actions) runs `terraform validate`, `terraform plan` on PRs.
+- Documentation updated in `docs/operations/environment_management.md`, `docs/governance/access_review_process.md`.
+- Security checklist (PRD §84) verified for staging and production.
+- Sign‑off from Platform Admin and Data Governance.

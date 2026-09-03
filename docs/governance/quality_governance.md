@@ -1,268 +1,181 @@
-# FINDEX — Quality Governance
+# KLIBRA — Quality Governance
 
 **Document Type:** Quality Governance  
-**Product:** FINDEX — Financial Data & Intelligence Exchange  
-**Product Class:** Enterprise Financial Intelligence Data Platform  
-**Document Status:** Draft  
-**Version:** 1.0  
-**Date:** 2026-09-02  
-**Owner:** FINDEX Data Governance Team  
+**Product:** KLIBRA — Economic Intelligence Platform  
+**Product Class:** Enterprise Economic Intelligence & Data Products Platform  
+**Document Status:** Active  
+**Version:** 2.0  
+**Date:** 2026-09-03  
+**Owner:** KLIBRA Data Governance Team  
 **Classification:** Internal  
+**Related:** PRD §32 (quality gates), §33 (data quality), §34 (quarantine), §44 (data contracts); TDD §21, §22, §23, §67  
 
 ---
 
 ## 1. Purpose
 
-This document establishes the quality governance framework for FINDEX. It defines how quality is measured, monitored, escalated, audited, and continuously improved across all data products and layers of the platform.
-
-Quality governance ensures that quality is not merely a technical check but an organizational discipline with clear accountability, measurable targets, and actionable processes.
+Establish the quality governance framework for KLIBRA. It defines how data quality is measured, monitored, escalated, audited, and continuously improved across all data products and platform layers (PRD §32‑§34, TDD §21‑§23, §67).
 
 ---
 
 ## 2. Scope
 
-This framework applies to all quality evaluations performed across the FINDEX platform, including:
+Applies to all quality evaluations across the KLIBRA platform:
 
-- Batch-level quality checks (file existence, payload integrity, record counts)
-- Record-level quality checks (type validity, nullability, range, allowed values)
-- Dataset-level quality checks (duplicate rate, completeness, freshness, temporal continuity)
-- Business-level quality checks (domain-specific rules, reconciliation)
-- Quality outcomes (Accepted, Accepted with Warning, Quarantined, Rejected)
-- Quality severity classifications (P0–P3)
-
----
-
-## 3. Quality Framework Summary
-
-### 3.1 Quality Dimensions
-
-FINDEX evaluates, where applicable:
-
-| Dimension | Description | Evaluation Level |
-|---|---|---|
-| **Completeness** | All expected records and fields are present | Dataset |
-| **Uniqueness** | No unintended duplicate records | Dataset |
-| **Validity** | Values conform to defined types, ranges, and formats | Record |
-| **Consistency** | Values are logically consistent across fields | Dataset |
-| **Referential Integrity** | Foreign key relationships resolve correctly | Record |
-| **Freshness** | Data is sufficiently up-to-date | Dataset |
-| **Temporal Validity** | Temporal semantics are correct and coherent | Dataset |
-| **Business-Rule Compliance** | Domain-specific rules are satisfied | Business |
-
-### 3.2 Quality Outcomes
-
-| Outcome | Description | Action |
-|---|---|---|
-| **Accepted** | Data passed all quality checks | Published to next layer |
-| **Accepted with Warning** | Data passed but with noted anomalies | Published with warning flag |
-| **Quarantined** | Data isolated for investigation | Not published; investigation initiated |
-| **Rejected** | Data failed blocking quality controls | Not published; root cause analysis |
-
-### 3.3 Severity Classification
-
-| Severity | Description | Blocking | Response Time |
-|---|---|---|---|
-| **P0 — Critical** | Production data unsafe or platform integrity compromised | Yes | Immediate |
-| **P1 — High** | Critical dataset cannot be trusted or is materially incomplete | Yes | Within 4 hours |
-| **P2 — Medium** | Quality degradation with usable but constrained output | No | Within 24 hours |
-| **P3 — Low** | Non-blocking anomaly or metadata/documentation issue | No | Within 1 week |
+- Raw ingestion validation.
+- Bronze data type and completeness checks.
+- Silver schema and referential integrity validation.
+- Gold business rule compliance.
+- Semantic metric correctness.
+- Intelligence product coverage and confidence.
+- Source health monitoring.
 
 ---
 
-## 4. Quality Thresholds
+## 3. Quality Dimensions
 
-### 4.1 Threshold Definition Principles
+KLIBRA evaluates, where applicable:
 
-1. Quality thresholds are defined **per dataset** in the Data Contract, not applied universally.
-2. Thresholds are based on business requirements and source characteristics.
-3. Thresholds are documented, version-controlled, and reviewed periodically.
-4. Thresholds must be measurable and automated where practical.
-
-### 4.2 Default Minimum Thresholds
-
-Unless a Data Contract specifies otherwise, the following minimum thresholds apply:
-
-| Dimension | Threshold | Enforcement |
-|---|---|---|
-| Completeness (record count) | ≥ 95% of expected records | P2 — warn if below |
-| Duplicate rate | 0% for key fields | P1 — quarantine if violated |
-| Type validity | 0% invalid types | P1 — quarantine invalid records |
-| Referential integrity | 0% orphaned references | P1 — quarantine orphans |
-| Freshness | Within defined SLA per dataset | P2 — alert if breached |
-| Non-null key fields | 0% null values | P1 — quarantine null key records |
+| Dimension | Description |
+| --- | --- |
+| Completeness | All expected fields and records present. |
+| Uniqueness | No duplicate primary keys. |
+| Validity | Values within allowed ranges and enumerations. |
+| Consistency | Values consistent across related fields. |
+| Referential Integrity | Foreign keys resolve to existing records. |
+| Freshness | Data updated within defined SLO (PRD §60.1). |
+| Temporal Validity | Observation dates are plausible. |
+| Business Rule Compliance | Domain‑specific rules satisfied. |
 
 ---
 
-## 5. Quality Monitoring and Reporting
+## 4. Quality Severity
 
-### 5.1 Monitoring
+Aligned with TDD §22:
 
-Quality is monitored continuously through automated checks embedded in the pipeline. Monitoring covers:
+| Severity | Behavior |
+| --- | --- |
+| **P0 — Critical** | Production data unsafe or platform integrity compromised. Must block publication. |
+| **P1 — High** | Critical dataset cannot be trusted or is materially incomplete. Must block publication. |
+| **P2 — Medium** | Quality degradation with usable but constrained output. Publish with warning. |
+| **P3 — Low** | Non‑blocking anomaly or documentation issue. |
 
-- Real-time quality check results per pipeline run
-- Quality trend analysis over time
-- Quality score per dataset per period
-- Quality outcome distribution (Accepted / Warning / Quarantined / Rejected)
-- Freshness breach alerts
-- Schema change detection
+---
 
-### 5.2 Reporting
+## 5. Quality Outcomes
 
-| Report | Frequency | Audience | Content |
-|---|---|---|---|
-| Quality Dashboard | Real-time | Technical Owner, Data Owner | Per-run quality outcomes, freshness, anomalies |
-| Quality Weekly Summary | Weekly | Data Owner, Technical Owner | Quality trends, incidents, improvement actions |
-| Quality Monthly Report | Monthly | Data Governance, Executive Management | Aggregate quality metrics, SLA adherence, trends |
-| Quality Quarterly Audit | Quarterly | Data Governance, Audit | Comprehensive quality review, threshold adequacy |
+| Outcome | Meaning |
+| --- | --- |
+| Accepted | Passed all P0/P1 rules. |
+| Accepted with Warning | Passed P0/P1, P2 violations noted. |
+| Quarantined | P0 or P1 rule failed; data held for investigation. |
+| Rejected | Payload invalid at ingestion stage. |
 
-### 5.3 Quality Score
+---
 
-Each dataset receives a quality score per pipeline run:
+## 6. Quality Gates
+
+Per TDD §23, quality gates exist at each layer:
 
 ```text
-Quality Score = (Accepted Records / Total Records) × 100
+Raw → Bronze → Silver → Gold → Publication
 ```
 
-The score is recorded in `fact_financial_observation.quality_score` and tracked over time.
+A dataset **must not** progress past a gate if any **blocking** (P0/P1) rule is violated.
 
 ---
 
-## 6. Quality Escalation
+## 7. Per‑Dataset Thresholds
 
-### 6.1 Escalation Triggers
+Quality thresholds are defined in the **data contract** for each dataset (PRD §29, TDD §66). No universal threshold applies; thresholds are dataset‑specific and approved by the Data Owner.
 
-| Trigger | Severity | Escalation Path |
-|---|---|---|
-| P0 quality failure | P0 | Technical Owner → Data Governance → Executive Management (immediate) |
-| P1 quality failure | P1 | Technical Owner → Data Owner (within 4 hours) |
-| Recurring P2 failures | P2 | Technical Owner → Data Owner (weekly review) |
-| Quality SLA breach | P2 | Technical Owner → Data Owner → Data Governance |
-| Freshness breach | P2 | Technical Owner → Data Owner → Business Owner |
+Minimum checks per production dataset:
 
-### 6.2 Escalation Process
-
-```text
-Quality Failure Detected
-  ↓
-Automated Alert (severity-based)
-  ↓
-Technical Owner investigates
-  ↓
-  ├── Resolved → Document and close
-  │
-  └── Unresolved within SLA → Escalate to Data Owner
-        ↓
-        ├── Resolved → Document and close
-        │
-        └── Unresolved → Escalate to Data Governance
-              ↓
-              ├── Resolved → Document and close
-              │
-              └── Critical → Escalate to Executive Management
-```
+- Schema compliance.
+- Primary key uniqueness.
+- Nullability of required fields.
+- Domain/range validity.
+- Freshness SLO compliance.
+- Duplicate detection.
+- Row‑count anomaly detection.
+- Referential integrity (where applicable).
 
 ---
 
-## 7. Quality Audit
+## 8. Quality Monitoring
 
-### 7.1 Audit Scope
+### 8.1 Dashboard
 
-Quality audits verify:
+A centralized quality dashboard (OpenMetadata + CloudWatch) shows:
 
-- Quality thresholds are appropriate and current
-- Quality checks are operating correctly
-- Quality outcomes are accurately recorded
-- Quarantine procedures are followed
-- Escalation paths are functioning
-- Quality trends are improving or stable
-- Data Contracts reflect actual quality performance
+- Dataset health status (P0/P1/P2/P3 violation counts).
+- Trend of quality score over time.
+- Freshness status per dataset.
+- Incident correlation.
 
-### 7.2 Audit Cadence
+### 8.2 Alerting
 
-| Audit Type | Frequency | Owner |
-|---|---|---|
-| Operational quality review | Weekly | Technical Owner |
-| Quality threshold review | Quarterly | Data Owner |
-| Comprehensive quality audit | Quarterly | Data Governance |
-| Quality framework effectiveness | Annually | Data Governance + Executive Management |
+P0/P1 violations trigger:
 
-### 7.3 Audit Deliverables
+- Immediate alert to **Technical Owner** and **Data Owner**.
+- P0 violations halt Gold publication.
+- P1 violations block publication and require investigation.
 
-Each audit produces:
-
-1. Audit findings and observations
-2. Quality metrics vs. targets
-3. Threshold adequacy assessment
-4. Recommended improvements
-5. Action items with owners and deadlines
-6. Trend analysis
+(PRD §30, TDD §30)
 
 ---
 
-## 8. Quality Improvement
+## 9. Escalation
 
-### 8.1 Continuous Improvement Cycle
-
-```text
-Measure → Analyze → Improve → Verify → Monitor
-```
-
-### 8.2 Improvement Areas
-
-Quality improvements may target:
-
-- Adding new quality checks based on discovered anomalies
-- Adjusting thresholds based on observed data behavior
-- Improving source data quality through source institution engagement
-- Enhancing connector robustness to reduce ingestion errors
-- Refining transformation logic to reduce quality failures
-- Improving documentation to prevent definition-related quality issues
-
-### 8.3 Quality Metrics
-
-Key quality metrics tracked over time:
-
-| Metric | Description | Target |
-|---|---|---|
-| Quality pass rate | Percentage of records Accepted | ≥ 98% |
-| Quality warning rate | Percentage of records Accepted with Warning | ≤ 2% |
-| Quarantine rate | Percentage of records/quarantined batches | ≤ 0.5% |
-| Rejection rate | Percentage of records/batches Rejected | ≤ 0.1% |
-| Freshness SLA adherence | Percentage of datasets meeting freshness targets | ≥ 95% |
-| Mean time to resolution | Average time to resolve quality incidents | Per severity |
-| Quality trend | Direction of quality score over time | Stable or improving |
+| Severity | Escalation Path |
+| --- | --- |
+| P0 | Platform Admin → Data Governance Committee → Executive Management |
+| P1 | Technical Owner → Data Owner → Data Governance |
+| P2 | Technical Owner → Data Owner |
+| P3 | Technical Owner (weekly review) |
 
 ---
 
-## 9. Quality Governance Roles
+## 10. Incident Management
 
-| Role | Quality Responsibility |
-|---|---|
-| **Business Owner** | Defines quality expectations from business perspective; accepts quality outcomes |
-| **Data Owner** | Defines and maintains quality thresholds; reviews quality reports; escalates issues |
-| **Technical Owner** | Implements and operates quality checks; investigates and resolves failures |
-| **Data Governance** | Oversees quality framework; conducts audits; approves threshold changes |
+Quality incidents follow the **Incident Management** process (`docs/operations/incident_management.md`). Every P0/P1 quality incident requires:
+
+1. Incident ticket (INC‑NNN).
+2. Root cause analysis.
+3. Resolution and prevention plan.
+4. Post‑incident review (blameless).
+5. Updates to quality rules if gap identified.
 
 ---
 
-## 10. Document Version History
+## 11. Data Quality SLAs
+
+Per PRD §60.2:
+
+- **Pipeline reliability:** ≥ 99 % successful scheduled runs (excluding documented provider outages).
+- **Freshness:** ≥ 99 % of scheduled datasets meet declared freshness windows.
+- **Quality:** Zero unresolved P0 conditions at publication time.
+
+SLA metrics are tracked and reported monthly.
+
+---
+
+## 12. Continuous Improvement
+
+- Quarterly quality review by Data Governance Committee.
+- Root cause trends analyzed and prioritized.
+- Quality rule library maintained and version‑controlled.
+- Lessons learned fed into data contracts and source catalog.
+
+---
+
+## 13. Document Version History
 
 | Version | Date | Author | Changes |
-|---|---|---|---|
-| 1.0 | 2026-09-02 | FINDEX Data Governance Team | Initial draft — quality framework, thresholds, monitoring, escalation, audit, and improvement |
+| --- | --- | --- | --- |
+| 1.0 | 2026-09-02 | FINDEX Data Governance Team | Initial draft — FINDEX baseline |
+| 2.0 | 2026-09-03 | KLIBRA Data Governance Team | Updated to KLIBRA PRD v2.0 / TDD v2.0; aligned severity definitions, quality outcomes, SLOs, and escalation paths |
 
 ---
 
-## 11. Document Status
-
-This Quality Governance document is a draft artifact subject to stakeholder review and approval. Quality thresholds defined here are minimum defaults; each dataset's Data Contract specifies the authoritative thresholds.
-
-This document is a companion to:
-- **Data Governance Policy** — governance framework and principles
-- **Data Contracts** — per-dataset quality thresholds
-- **PRD** — quality requirements (Section 13)
-- **TDD** — quality framework and severity (Sections 21, 22)
-
----
-
-*This document is classified as Internal. Distribution is restricted to authorized FINDEX team members and stakeholders.*
+*This document is classified as Internal. Distribution is restricted to authorized KLIBRA team members and stakeholders.*

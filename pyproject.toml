@@ -1,0 +1,208 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "klibra"
+version = "0.1.0"
+description = "KLIBRA — Economic Intelligence Platform. Governed ingestion, lakehouse, semantic metrics, and explainable intelligence products for global economic and market data."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+authors = [
+    { name = "KLIBRA Data Platform Engineering" }
+]
+keywords = [
+    "data-platform",
+    "lakehouse",
+    "ingestion",
+    "dbt",
+    "duckdb",
+    "data-quality",
+    "lineage",
+    "semantic-layer",
+    "intelligence"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: Scientific/Engineering :: Information Analysis"
+]
+
+dependencies = [
+    "python-dotenv==1.0.1",
+    "requests==2.32.3",
+    "lxml==5.3.0",
+    "defusedxml==0.7.1",
+    "boto3==1.35.33",
+    "minio==7.2.9",
+    "psycopg2-binary==2.9.9",
+    "SQLAlchemy==2.0.35",
+    "alembic==1.13.2",
+    "duckdb==1.1.2",
+    "dbt-core==1.9.2",
+    "dbt-duckdb==1.9.1",
+    "jsonschema==4.23.0",
+    "opentelemetry-api==1.27.0",
+    "opentelemetry-sdk==1.27.0",
+    "opentelemetry-exporter-otlp==1.27.0",
+    "pytest==8.3.3",
+    "pytest-cov==5.0.0",
+    "ruff==0.6.9",
+    "black==24.10.0",
+    "mypy==1.11.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.3",
+    "pytest-cov==5.0.0",
+    "ruff==0.6.9",
+    "black==24.10.0",
+    "mypy==1.11.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/echidev/klibra"
+Documentation = "https://github.com/echidev/klibra/tree/main/docs"
+Issues = "https://github.com/echidev/klibra/issues"
+
+[tool.setuptools]
+package-dir = { "" = "." }
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+    "ingestion*",
+    "transformation*",
+    "semantic*",
+    "intelligence*",
+    "orchestration*",
+]
+exclude = [
+    "tests*",
+    "infrastructure*",
+    "docs*",
+    "specs*",
+    "scripts*",
+    "venv*",
+    ".specify*",
+]
+
+[tool.setuptools.package-data]
+"ingestion" = ["py.typed"]
+"transformation" = ["py.typed"]
+"semantic" = ["py.typed"]
+"intelligence" = ["py.typed"]
+"orchestration" = ["py.typed"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["ingestion", "transformation", "semantic", "intelligence", "orchestration", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line-too-long (handled by formatter)
+    "B008",  # function-call-in-default-argument (common in Airflow)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "klibra",
+    "ingestion",
+    "transformation",
+    "semantic",
+    "intelligence",
+    "orchestration",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+no_implicit_optional = true
+check_untyped_defs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+
+[[tool.mypy.overrides]]
+module = ["dbt.*", "airflow.*", "great_expectations.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=ingestion",
+    "--cov=transformation",
+    "--cov=semantic",
+    "--cov=intelligence",
+    "--cov=orchestration",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-report=xml:coverage.xml",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:dbt.*",
+    "ignore::DeprecationWarning:airflow.*",
+]
+markers = [
+    "unit: Unit tests for pure functions and parsers",
+    "contract: Contract tests for data interfaces",
+    "integration: Pipeline stage integration tests",
+    "e2e: End-to-end pipeline tests",
+    "failure: Failure injection tests",
+    "slow: Tests that take more than 5 seconds",
+]
+
+[tool.coverage.run]
+source = ["ingestion", "transformation", "semantic", "intelligence", "orchestration"]
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+show_missing = true
+fail_under = 80

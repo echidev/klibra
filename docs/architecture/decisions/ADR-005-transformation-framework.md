@@ -1,119 +1,77 @@
 # ADR-005 — Transformation Framework
 
-**Status:** Proposed  
-**Date:** 2026-09-02  
-**Author:** FINDEX Data Platform Engineering  
-**Deciders:** FINDEX Architecture Team  
+**Status:** Accepted  
+**Date:** 2026-09-03  
+**Author:** KLIBRA Data Platform Engineering  
+**Deciders:** KLIBRA Architecture Team  
 **Supersedes:** None  
+**Related:** PRD §11 (Silver/Gold modelling); TDD §24 (transformation architecture), §63 (semantic metrics)  
 
 ---
 
 ## Context
 
-FINDEX requires multiple transformation approaches to handle different types of data processing:
+KLIBRA requires transformations at three stages:
 
-1. Source-specific parsing and extraction (procedural logic)
-2. Large-scale distributed transformations (big data volumes)
-3. SQL-based curated transformations with testing and documentation
-4. Local analytical validation and lightweight development
+- **Raw → Bronze:** source‑specific parsing and error handling.
+- **Bronze → Silver:** standardization to the canonical model (units, identifiers, temporal types).
+- **Silver → Gold:** business‑oriented aggregations and Gold data products (PRD §11).
 
-No single framework optimally serves all these needs. The transformation architecture must match each workload type while maintaining consistency and reproducibility.
+Each stage has different performance and language needs.
 
 ---
 
 ## Decision
 
-FINDEX shall use a multi-framework transformation architecture:
+Adopt a **multi‑framework architecture**:
 
-- **Python** for source-specific parsing, file extraction, API clients, and complex procedural logic
-- **Spark** for distributed processing when data volume warrants it
-- **dbt** for SQL-based transformations, data tests, documentation, and dependency graphs
-- **DuckDB** for local analytical validation and lightweight development
-
----
-
-## Alternatives Considered
-
-### Alternative A: Single Framework for All Transformations
-
-Use one framework (e.g., Spark) for all transformation needs.
-
-| Aspect | Assessment |
-|---|---|
-| Pros | Consistency; single ecosystem |
-| Cons | Overkill for simple transformations; Python procedural logic difficult in Spark; dbt SQL better for curated transformations |
-| Verdict | **Rejected** |
-
-### B: Multi-Framework Approach (Selected)
-
-Each framework used for its optimal workload.
-
-| Aspect | Assessment |
-|---|---|
-| Pros | Each tool used for its strength; cost-efficient; scalable; maintainable |
-| Cons | Multiple frameworks to learn and maintain; integration complexity |
-| Verdict | **Selected** — Aligns with TDD Section 24 |
-
-### Alternative C: dbt Only
-
-Use dbt for all transformations.
-
-| Aspect | Assessment |
-|---|---|
-| Pros | SQL-based; documentation; testing; dependency graphs |
-| Cons | Cannot handle source-specific parsing; limited procedural logic; not suitable for distributed processing |
-| Verdict | **Rejected** — Insufficient for all workload types |
-
----
-
-## Consequences
-
-### Positive
-
-1. **Optimal tool usage** — Each framework handles its best workload
-2. **Cost efficiency** — Spark used only when volume justifies it
-3. **Maintainability** — Python for complex procedural logic, dbt for SQL transformations
-4. **Testing** — dbt provides built-in data tests
-5. **Documentation** — dbt auto-generates documentation
-6. **Local development** — DuckDB enables local validation without full infrastructure
-7. **Scalability** — Spark handles large-scale processing
-
-### Negative
-
-1. **Multiple frameworks** — Team must be proficient in Python, dbt SQL, and Spark
-2. **Integration complexity** — Frameworks must interoperate correctly
-3. **Operational overhead** — Multiple frameworks to monitor and maintain
+- **Python** – for API clients, file extraction, source‑specific parsing, and lightweight joining/aggregation where Pandas suffices.
+- **Apache Spark** – for distributed, large‑scale processing (e.g., historical backfills covering many years) where volume justifies cluster overhead.
+- **dbt (data build tool)** – for SQL‑based, version‑controlled transformations, tests, and documentation (always used for Silver & Gold).
+- **DuckDB** – for local analytical validation and ad‑hoc inspection.
 
 ---
 
 ## Framework Responsibilities
 
 | Framework | Responsibility | When Used |
-|---|---|---|
-| **Python** | API clients, file extraction, source-specific parsing, complex procedural logic | Always |
-| **Spark** | Distributed transformation, large historical processing | When volume warrants |
-| **dbt** | SQL-based transformations, data tests, documentation, dependency graphs | Always for Silver/Gold |
-| **DuckDB** | Local analytical validation, lightweight development, ad-hoc inspection | Development only |
+| --- | --- | --- |
+| **Python** | API clients, extraction, parsing, procedural logic, small‑scale joins | Always |
+| **Spark** | Distributed transformation, large historical processing, heavy aggregations | When volume warrants |
+| **dbt** | SQL transformations, tests, docs, dependency graphs; mandatory for Silver/Gold | Always for Silver/Gold |
+| **DuckDB** | Local validation, dev, ad‑hoc inspection, profiling | Development only |
 
 ---
 
-## Related Decisions
+## Implementation Details
 
-| ADR | Relationship |
-|---|---|
-| ADR-001 | Object storage — input/output for all transformations |
-| ADR-002 | Source ingestion — Python handles source extraction |
-| ADR-003 | Canonical model — transformations map to canonical structure |
-| ADR-004 | Orchestration — Airflow invokes transformations |
+- **Connector packages** (Python) reside under `ingestion/` and are tested via `tests/connector/`.
+- **Spark jobs** reside under `transformation/batch/` and are invoked via `spark-submit` tasks in Airflow.
+- **dbt project** located at `transformation/dbt/` defines models under `models/silver/` and `models/gold/` with accompanying tests (`tests` blocks) and documentation (`docs`).
+- **DuckDB** usage documented in `docs/technical/TDD.md` §35 and local development guide.
 
 ---
 
-## Document Version History
+## Consequences
 
-| Version | Date | Author | Changes |
-|---|---|---|---|
-| 1.0 | 2026-09-02 | FINDEX Data Platform Engineering | Initial draft |
+**Positive:**
+
+- Flexibility to choose the right tool per stage.
+- Clear ownership: Python for per‑source ingestion, Spark for heavy lifting, dbt for governed Silver/Gold SQL.
+- Strong testing and documentation via dbt.
+
+**Negative:**
+
+- Multiple languages / tooling increases onboarding effort; mitigated by shared conventions and runbooks.
+- Spark added overhead for small batch sizes; handled by conditionally skipping Spark when row count below threshold.
 
 ---
 
-*This ADR is classified as Internal.*
+## Definition of Done
+
+- Python connectors validated in staging.
+- Spark job for historical backfill passes integration tests.
+- dbt models for Silver and Gold pass `dbt test` and CI contract validation.
+- DuckDB validation scripts included in `scripts/` for profiling.
+- Documentation updated (`docs/operations/monitoring_alerts.md`, `docs/governance/quality_governance.md`).
+- Review sign‑off from Data Engineering and Data Governance.

@@ -1,0 +1,32 @@
+# CODEOWNERS — KLIBRA
+# Per AGENTS.md §10: code review required before merge; this file maps
+# paths to owning teams/individuals. PRs that touch these paths request
+# review automatically on GitHub.
+#
+# Format: pattern <TAB> owner
+# Order matters: last match wins. Keep more specific patterns first.
+
+# ── Default: data platform team owns everything ──────────────
+/*                                                @klibra/data-platform
+/docs/                                            @klibra/data-platform
+/ingestion/                                       @klibra/data-engineers
+/transformation/                                 @klibra/data-engineers
+/semantic/                                       @klibra/data-engineers
+/intelligence/                                   @klibra/data-engineers
+/orchestration/                                  @klibra/data-engineers
+
+# ── Constitutional and governance documents ────────────────
+/AGENTS.md                                       @klibra/data-platform
+/.specify/memory/constitution.md                 @klibra/data-governance
+/docs/governance/                                @klibra/data-governance
+
+# ── PRD and TDD are product + engineering owned ─────────────
+/docs/product/PRD.md                              @klibra/data-platform @klibra/product
+/docs/technical/TDD.md                            @klibra/data-platform
+
+# ── ADRs require architecture + governance sign-off ─────────
+/docs/architecture/decisions/                    @klibra/architecture @klibra/data-governance
+
+# ── Secrets and env templates ──────────────────────────────
+/.env.example                                     @klibra/data-platform
+/scripts/                                        @klibra/data-platform

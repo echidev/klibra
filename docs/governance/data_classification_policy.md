@@ -1,34 +1,32 @@
-# FINDEX — Data Classification Policy
+# KLIBRA — Data Classification Policy
 
 **Document Type:** Data Classification Policy  
-**Product:** FINDEX — Financial Data & Intelligence Exchange  
-**Product Class:** Enterprise Financial Intelligence Data Platform  
-**Document Status:** Draft  
-**Version:** 1.0  
-**Date:** 2026-09-02  
-**Owner:** FINDEX Data Governance Team  
+**Product:** KLIBRA — Economic Intelligence Platform  
+**Product Class:** Enterprise Economic Intelligence & Data Products Platform  
+**Document Status:** Active  
+**Version:** 2.0  
+**Date:** 2026-09-03  
+**Owner:** KLIBRA Data Governance Team  
 **Classification:** Internal  
+**Related:** PRD §16, §33; TDD §31  
 
 ---
 
 ## 1. Purpose
 
-This Data Classification Policy establishes a standardized classification framework for all data within the FINDEX platform. Classification determines handling requirements, access controls, encryption standards, and distribution rules.
-
-The policy ensures that all data is appropriately categorized and that handling requirements are proportional to the sensitivity and business impact of the data.
+This Data Classification Policy establishes a standardized classification framework for all data within the KLIBRA platform. Classification determines handling requirements, access controls, encryption standards, audit obligations, and distribution rules (PRD §16, §33).
 
 ---
 
 ## 2. Scope
 
-This policy applies to all data within the FINDEX platform:
+This policy applies to all data within KLIBRA:
 
-- Raw source payloads and acquisition metadata
-- Bronze, Silver, and Gold layer datasets
-- Operational metadata and pipeline execution records
-- Data contracts, dictionaries, and documentation
-- Monitoring logs and audit records
-- Infrastructure configuration and code
+- Raw source payloads.
+- Bronze, Silver, Gold, Quarantine, and Metadata layers.
+- Semantic metrics and intelligence products.
+- Operational metadata and audit logs.
+- Pipeline code, configuration, and infrastructure definitions.
 
 ---
 
@@ -36,134 +34,112 @@ This policy applies to all data within the FINDEX platform:
 
 ### 3.1 Public
 
-**Definition:** Data that can be freely shared with external parties without restriction.
+**Definition:** Data explicitly published by authoritative institutions for unrestricted public access.
 
-**Examples:** Published statistical indicators from BPS, publicly available exchange rates, published policy rates.
+**Examples:** World Bank Indicators, IMF published statistics, FRED public series, ECB published series.
 
-**Handling Requirements:**
-- No access restrictions
-- Standard distribution permitted
-- No special encryption required beyond standard infrastructure security
-- Standard archival policies apply
+**Handling:**
+
+- No access control beyond platform authentication.
+- Permitted for broad internal and approved external consumption.
+- Source terms and licensing constraints respected (PRD §38).
 
 ### 3.2 Internal
 
-**Definition:** Data intended for use by authorized FINDEX team members and approved downstream consumers. Not for external distribution.
+**Definition:** Data intended for use by authorized KLIBRA team members and approved downstream consumers. Not for external distribution.
 
-**Examples:** Credit growth indicators, banking statistics, financial sector aggregates, macroeconomic composites, operational metadata.
+**Examples:** Standardized Silver/Gold tables, semantic metrics, intelligence products, operational metadata.
 
-**Handling Requirements:**
-- Access restricted to authorized FINDEX personnel and approved consumers
-- No external sharing without explicit approval
-- Encryption in transit required
-- Encryption at rest recommended
-- Access logging required
-- Internal distribution only
+**Handling:**
+
+- Access restricted to authorized KLIBRA personnel and approved consumers.
+- Encryption in transit required.
+- Encryption at rest where supported (PRD §33).
+- Audit logging of administrative actions.
+- Versioning policy enforced.
 
 ### 3.3 Confidential
 
-**Definition:** Sensitive data requiring restricted access, enhanced encryption, and strict audit logging. Unauthorized disclosure could cause significant harm.
+**Definition:** Data that, if disclosed without authorization, could cause reputational, competitive, or operational harm. Includes credentials, internal incident reports, and contractual details.
 
-**Examples:** Individual-level financial data, proprietary source data under restrictive terms, unreleased strategic indicators, security credentials.
+**Examples:** API keys, secrets, source redistribution agreements, internal incident reports.
 
-**Handling Requirements:**
-- Strict access control with explicit authorization
-- Encryption in transit mandatory
-- Encryption at rest mandatory
-- Full audit logging of all access
-- No external distribution
-- Minimum access count
-- Regular access review
-- Incident response plan for breaches
+**Handling:**
 
----
+- Access restricted to a named, approved group with documented business justification.
+- Encryption in transit and at rest mandatory.
+- Audit logging mandatory; rotation policy enforced.
+- Distribution prohibited.
 
-## 4. Classification Rules
+### 3.4 Restricted
 
-### 4.1 Default Classification
+**Definition:** Reserved for future use cases that may require handling of personally identifiable information, regulated financial records, or transaction-level detail. Not applicable to current KLIBRA scope (PRD §5).
 
-1. All FINDEX data products default to **Internal** classification.
-2. Only data explicitly classified as Public or Confidential deviates from the default.
-3. Classification is determined by the Data Owner with Data Governance oversight.
-
-### 4.2 Classification Determination
-
-Classification is determined by considering:
-
-| Factor | Assessment |
-|---|---|
-| **Source sensitivity** | How sensitive is the source institution's data? |
-| **Content sensitivity** | Does the data contain personally identifiable or confidential information? |
-| **Business impact** | What is the impact if this data is disclosed? |
-| **Licensing terms** | Do source terms restrict distribution? |
-| **Regulatory requirements** | Are there legal or regulatory restrictions on distribution? |
-| **Consumer expectations** | What classification do consumers expect? |
-
-### 4.3 FINDEX-Specific Rule
-
-FINDEX intentionally does not ingest personally identifiable customer information, confidential customer banking records, or regulated credit decision data. As such, Confidential-classified data within FINDEX is limited to:
-
-- Source data under restrictive licensing terms
-- Unreleased strategic indicators
-- Security credentials and secrets
-- Audit logs containing sensitive operational details
-
-### 4.4 Public Data Exception
-
-Public data sources do not automatically make the resulting data product Public. The data product classification may be elevated to Internal based on:
-
-- Aggregation with other datasets creating sensitive composites
-- Source licensing restrictions on derived products
-- Business sensitivity of the combined indicator
-- Regulatory considerations
+**Note:** KLIBRA explicitly avoids Restricted-classified data in its initial scope.
 
 ---
 
-## 5. Classification Management
+## 4. Classification Determination
 
-### 5.1 Assignment
+### 4.1 Default
 
-1. Data Owner proposes classification for each dataset.
-2. Data Governance reviews and approves classification.
-3. Classification documented in Data Contract and metadata system.
-4. Classification is a required field for every dataset.
+All KLIBRA data products default to **Internal** classification (PRD §33; TDD §31).
 
-### 5.2 Reclassification
+### 4.2 Determination Rules
 
-Reclassification follows the change management process:
+Classification is determined by:
 
-1. Data Owner proposes reclassification
-2. Impact assessment for affected consumers
-3. Data Governance review and approval
-4. Consumer notification if downgrade occurs
-5. Implementation following CI/CD pipeline
-6. Metadata and access controls updated
+- Source institution's terms of use.
+- Whether data contains personally identifiable information (PII).
+- Whether data is subject to redistribution restrictions.
+- Contractual obligations with sources.
+- Operational sensitivity (e.g., credentials, incident reports).
 
-### 5.3 Downgrading Restrictions
+### 4.3 KLIBRA-Specific Rule
 
-Downgrading classification (e.g., Internal → Public) requires:
+KLIBRA is designed for **public / non-confidential economic data** (PRD §33). The platform intentionally does not ingest:
 
-- Explicit source institution permission (if applicable)
-- Legal review of licensing terms
-- Data Governance approval
-- Consumer notification
-- Documented rationale
+- Personally identifiable customer information.
+- Confidential customer banking records.
+- Regulated credit-decision data.
+- Transaction-level financial data.
 
-Upgrading classification has no additional restrictions beyond standard change management.
+Confidential classification within KLIBRA is therefore limited to:
+
+- Secrets and API keys.
+- Internal incident reports.
+- Source redistribution agreements.
+- Audit logs containing sensitive operational detail.
 
 ---
 
-## 6. Access Controls by Classification
+## 5. Required Fields per Classification
 
-| Control | Public | Internal | Confidential |
-|---|---|---|---|
-| Access restriction | None | Authorized personnel only | Restricted authorization |
-| Encryption in transit | Recommended | Required | Required |
-| Encryption at rest | Recommended | Recommended | Required |
-| Audit logging | Recommended | Required | Required |
-| Distribution | Internal and external | Internal only | Internal only with minimum access |
-| Access review | Annually | Quarterly | Monthly |
-| Approval for access | None | Data Owner | Data Owner + Data Governance |
+Each dataset must declare its classification in its data contract (PRD §29; TDD §66):
+
+| Field | Public | Internal | Restricted (future) |
+| --- | --- | --- | --- |
+| **classification** | Required | Required | Required |
+| **source_terms** | Required | Required | Required |
+| **redistribution_allowed** | Yes | Per source terms | No |
+| **encryption_in_transit** | Required | Required | Required |
+| **encryption_at_rest** | Where supported | Required | Required |
+| **access_role_required** | Any role | Authenticated | Specific named roles |
+| **audit_logging** | Standard | Standard | Enhanced |
+| **retention_policy** | Per source terms | Per retention policy | Per regulatory requirement |
+
+---
+
+## 6. Access Controls
+
+Aligned with `access_review_process.md` (TDD §51):
+
+| Classification | Default Roles |
+| --- | --- |
+| Public | All authenticated roles |
+| Internal | Platform Admin, Data Engineer, Data Analyst, Data Scientist, Business Consumer, Read-only Auditor |
+| Confidential | Platform Admin, Technical Owner (named) |
+| Restricted (future) | Named individuals with documented justification |
 
 ---
 
@@ -171,62 +147,59 @@ Upgrading classification has no additional restrictions beyond standard change m
 
 ### 7.1 Storage
 
-| Classification | Storage Requirements |
-|---|---|
-| Public | Standard object storage |
-| Internal | Standard object storage with encryption at rest |
-| Confidential | Encrypted object storage with enhanced access controls |
+- **Public:** Object storage with standard encryption.
+- **Internal:** Object storage + RDS; access logging enabled; least-privilege IAM.
+- **Confidential:** Object storage + Secrets Manager; rotation policy; audit logs retained ≥ 1 year.
 
-### 7.2 Transfer
+### 7.2 Transit
 
-| Classification | Transfer Requirements |
-|---|---|
-| Public | Standard transfer |
-| Internal | Encrypted transfer (TLS) |
-| Confidential | Encrypted transfer with authenticated channels |
+- TLS 1.2+ for all data movement.
+- mTLS for service-to-service communication where supported.
 
-### 7.3 Disposal
+### 7.3 Distribution
 
-| Classification | Disposal Requirements |
-|---|---|
-| Public | Standard retention and archival policies |
-| Internal | Secure deletion per data retention policy |
-| Confidential | Secure deletion with verification; minimum retention period applies |
+- **Public:** May be redistributed per source terms.
+- **Internal:** Internal use only.
+- **Confidential:** No external distribution.
+
+### 7.4 Logging
+
+- All read access to Confidential and Restricted data is logged.
+- Logs retained per audit requirements (PRD §33).
 
 ---
 
-## 8. Classification Documentation
+## 8. Compliance
 
-Every dataset's Data Contract must document:
+KLIBRA must comply with:
 
-| Field | Description |
-|---|---|
-| **Classification** | Public, Internal, or Confidential |
-| **Rationale** | Why this classification was assigned |
-| **Handling requirements** | Specific handling rules |
-| **Access restrictions** | Who can access and under what conditions |
-| **Review date** | When classification was last reviewed |
+- Source institutions' terms of use.
+- Provider redistribution policies (PRD §38).
+- Applicable data-protection regulations (where applicable).
+
+Public data does not imply unrestricted commercial redistribution — provider terms must be honored (PRD §38).
 
 ---
 
-## 9. Document Version History
+## 9. Classification Updates
+
+Changing the classification of an existing dataset is a **Major change** under `change_management_process.md` and requires:
+
+1. New classification rationale documented.
+2. Data Governance review.
+3. Updated data contract.
+4. Consumer communication.
+5. Audit-log entry.
+
+---
+
+## 10. Document Version History
 
 | Version | Date | Author | Changes |
-|---|---|---|---|
-| 1.0 | 2026-09-02 | FINDEX Data Governance Team | Initial draft — classification levels, determination rules, access controls, handling requirements |
+| --- | --- | --- | --- |
+| 1.0 | 2026-09-02 | FINDEX Data Governance Team | Initial draft |
+| 2.0 | 2026-09-03 | KLIBRA Data Governance Team | Re-aligned to KLIBRA PRD v2.0 / TDD v2.0; clarified KLIBRA is public-data-only and Confidential scope is limited to secrets, incident reports, source agreements |
 
 ---
 
-## 10. Document Status
-
-This Data Classification Policy is a draft artifact subject to stakeholder review and approval.
-
-This document is a companion to:
-- **Data Governance Policy** — governance framework
-- **Access Review Process** — access controls by classification
-- **PRD** — security and governance requirements (Section 16)
-- **TDD** — security architecture (Section 31)
-
----
-
-*This document is classified as Internal. Distribution is restricted to authorized FINDEX team members and stakeholders.*
+*This document is classified as Internal. Distribution is restricted to authorized KLIBRA team members and stakeholders.*

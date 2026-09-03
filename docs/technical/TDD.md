@@ -1,19 +1,19 @@
-# FINDEX — Technical Design Document
+# KLIBRA — Technical Design Document
 
 **Document Type:** Technical Design Document (TDD)  
-**Product:** FINDEX — Financial Data & Intelligence Exchange  
-**Product Class:** Enterprise Financial Intelligence Data Platform  
+**Product:** KLIBRA — Economic Intelligence Platform  
+**Product Class:** Enterprise Economic Intelligence & Data Products Platform  
 **Document Status:** Architecture Baseline / Subject to Source Validation  
-**Version:** 1.0  
-**Date:** 2026-09-02  
-**Owner:** FINDEX Data Platform Engineering  
-**Classification:** Internal
+**Version:** 2.0  
+**Date:** 2026-09-03  
+**Owner:** KLIBRA Data Platform Engineering  
+**Classification:** Internal  
 
 ---
 
 # 1. Purpose
 
-This document defines the technical architecture, engineering standards, operational model, and implementation approach for FINDEX.
+This document defines the technical architecture, engineering standards, operational model, and implementation approach for KLIBRA.
 
 The TDD translates the approved product requirements into an implementable engineering design.
 
@@ -78,7 +78,7 @@ Stable, well-understood technology is preferred over unnecessary architectural n
                     External Sources
           ┌────────────┬────────────┬────────────┐
           │            │            │            │
-         OJK           BI          BPS      Other Official
+         World Bank    IMF        FRED     ECB / Market APIs
           │            │            │            │
           └────────────┴────────────┴────────────┘
                            │
@@ -125,29 +125,34 @@ Stable, well-understood technology is preferred over unnecessary architectural n
 
 # 4. Technology Strategy
 
-The platform will use technology according to workload characteristics.
-
-## Candidate Core Stack
+Technology shall be selected by workload and operational evidence.
 
 | Capability | Candidate Technology | Purpose |
-|---|---|---|
-| Object Storage | S3 / MinIO | Durable data lake storage |
-| Relational Metadata | PostgreSQL | Operational metadata and control plane |
+| --- | --- | --- |
+| Object Storage | S3 / MinIO | Durable raw and analytical storage |
+| Table Format | Apache Iceberg | Schema evolution, snapshots, time travel where justified |
+| Relational Metadata | PostgreSQL | Control plane, run state, registry |
 | Orchestration | Apache Airflow | Scheduling and dependency management |
-| Processing | Spark | Distributed transformation when required |
-| SQL Transformation | dbt | Curated relational transformations |
-| Local Analytics | DuckDB | Local analytical workloads |
+| Processing | Python / DuckDB / Spark | Source parsing, analytical transforms, scalable processing when required |
+| SQL Transformation | dbt | Gold models, tests, documentation |
+| Semantic Layer | dbt Semantic Layer / MetricFlow | Governed metrics and semantic relationships |
+| Data Quality | OpenMetadata checks and/or Soda/Great Expectations | Automated quality controls |
+| Data Catalog | OpenMetadata | Discovery, ownership, lineage, quality visibility |
+| Local Analytics | DuckDB | Fast local inspection and validation |
 | Containerization | Docker | Reproducible environments |
 | CI/CD | GitHub Actions | Automated validation and deployment |
-| IaC | Terraform | Reproducible infrastructure |
-| Cloud Analytics | Athena | Serverless querying of lake data |
-| Cloud Processing | AWS Glue | Managed ETL where economically justified |
-| Monitoring | CloudWatch / OpenTelemetry | Platform observability |
-| Secrets | AWS Secrets Manager | Production secret management |
+| IaC | Terraform | Reproducible cloud infrastructure |
+| Cloud Analytics | Athena / Trino | SQL analytics on object storage |
+| Monitoring | OpenTelemetry / CloudWatch | Platform and pipeline observability |
+| Secrets | AWS Secrets Manager / environment secret store | Secret isolation |
 
-The final stack shall be validated against actual source volume and operational requirements.
+Spark is optional and shall be justified by measured workload volume rather than included merely for architectural appearance.
 
----
+OpenMetadata is preferred for catalog/lineage/quality because it provides dataset discovery, lineage relationships, column-level lineage, and data-quality workflows.
+
+The semantic layer must remain conceptually independent from any single BI tool.
+
+# 5. Environment Architecture
 
 # 5. Environment Architecture
 
@@ -288,10 +293,10 @@ Gold contains business-oriented data products.
 Examples:
 
 ```text
-gold_credit_growth
-gold_financial_sector_monitor
-gold_macro_financial_context
-gold_regional_financial_profile
+gold_macro_indicators
+gold_interest_rate_monitor
+gold_market_overview
+gold_country_benchmark
 ```
 
 Gold models should optimize for consumer usability rather than source fidelity.
@@ -305,7 +310,7 @@ The platform should use a canonical observation model where compatible sources p
 Conceptual structure:
 
 ```text
-fact_financial_observation
+fact_economic_observation
 --------------------------------
 observation_id
 metric_id
@@ -355,7 +360,7 @@ Publication Time
       │
 Ingestion Time
       │
-      └── When FINDEX acquired it
+      └── When KLIBRA acquired it
 ```
 
 Where source revisions matter, version/effective-date handling should allow historical reconstruction.
@@ -385,12 +390,30 @@ The connector should not contain downstream business logic.
 
 Preferred order:
 
-1. Official API
-2. Official downloadable dataset
-3. Official portal
-4. Official web extraction when necessary
+1. Official public API / SDMX service.
+2. Official public bulk dataset.
+3. Official public catalog/resource endpoint.
+4. Official web source only where necessary, permitted, and testable.
 
-Scraping is a controlled fallback, not the default ingestion method.
+KLIBRA shall not use institutional-only APIs for Release 1.
+
+## 13.3 Source Access Classes
+
+### Class A — Public, No Key
+
+Example target: World Bank Indicators API; ECB Data Portal service.
+
+### Class B — Public Self-Service Credential
+
+Example target: FRED, Alpha Vantage, CoinGecko Demo API.
+
+Credentials are obtained by the individual developer through provider self-service registration, never by institutional proposal.
+
+### Class C — Public Statistical API with Portal/Account Considerations
+
+Example target: IMF Data APIs. The API exposes SDMX programmatic access; portal tooling may require an account. This class is permitted only after a live endpoint test proves the required dataset is accessible with personal access and without an institutional approval process.
+
+Scraping is a controlled fallback, not the default ingestion method..
 
 ---
 
@@ -790,7 +813,7 @@ Lineage should be available at dataset level initially and field level where pra
 
 # 29. Observability
 
-FINDEX requires two categories of observability.
+KLIBRA requires two categories of observability.
 
 ## Platform Observability
 
@@ -1307,7 +1330,7 @@ Production write privileges should be restricted.
 Recommended:
 
 ```text
-FINDEX/
+KLIBRA/
 ├── README.md
 ├── docs/
 │   ├── product/
@@ -1490,29 +1513,902 @@ Before launch, engineering must verify:
 
 ---
 
-# 60. Open Technical Questions
+# 60. Source Catalog & Accessibility Baseline
 
-These remain intentionally unresolved until source reconnaissance:
+Release 1 source selection is constrained by personal reproducibility.
 
-1. Which exact OJK datasets are accessible through stable structured interfaces?
-2. Which BI datasets can be accessed through supported public mechanisms?
-3. Which BPS datasets and API endpoints provide required historical coverage?
-4. What are the actual update frequencies?
-5. How frequently are historical values revised?
-6. What are the real payload sizes?
-7. What rate limits exist?
-8. Which sources require authentication?
-9. Which datasets share compatible dimensions?
-10. Which canonical entities can be reliably mapped?
-11. Does the initial workload justify Spark?
-12. Which workloads justify managed AWS services?
-13. What are realistic freshness and recovery targets?
+| Source | Primary Data | Access | Release 1 Role | Notes |
+| --- | --- | --- | --- | --- |
+| World Bank Indicators API | Development/macro indicators | Class A | Core | V2 API, no API key required |
+| IMF Data API | Macro / balance of payments / statistics | Class C | Core/optional | SDMX 2.1/3.0; validate portal/account path |
+| FRED | Macro/interest-rate series | Class B | Core | Personal API key required |
+| ECB Data Portal | FX/monetary/statistical series | Class A | Core | SDMX REST service |
+| Alpha Vantage | Market/FX/commodities | Class B | Optional market source | Free key and usage limits |
+| CoinGecko Demo | Crypto market data | Class B | Optional alternative source | Demo key required |
 
-These questions must be answered before final architecture freeze.
+The exact series list is versioned in `source_catalog.md` and must include endpoint-level verification timestamps.
 
----
+World Bank's Indicators API provides programmatic access to nearly 16,000 time-series indicators and explicitly states that API keys/authentication are no longer necessary.
 
-# 61. Architecture Freeze Criteria
+ECB's Data Portal provides an SDMX 2.1 RESTful web service for programmatic data and metadata access, including `updatedAfter` and historical version capabilities.
+
+FRED requires a registered API key for web-service requests, using a self-service developer account rather than institutional proposal access.
+
+Alpha Vantage provides a self-service free API key and documents broad categories including equities, FX, commodities, crypto, and economic indicators.
+
+CoinGecko documents a free Demo API plan with a generated API key and direct API request workflow.
+
+# 61. Public Source Connector Contract
+
+Every connector shall expose a common interface conceptually equivalent to:
+
+```text
+discover()
+validate_access()
+extract()
+validate_response()
+normalize_envelope()
+persist_raw()
+emit_metadata()
+```
+
+`validate_access()` is mandatory for KLIBRA because reproducible personal deployment is a product constraint.
+
+The connector must fail clearly when credentials, access rights, provider availability, or required endpoint capabilities are not satisfied.
+
+# 62. Semantic Layer Architecture
+
+The semantic layer sits above Gold and below consumer-specific presentation.
+
+```text
+Gold Data Products
+       │
+       ▼
+Semantic Models
+       │
+       ├── Dimensions
+       ├── Measures
+       ├── Metrics
+       ├── Time semantics
+       └── Business definitions
+       │
+       ▼
+Intelligence Models
+       │
+       ├── Composite scores
+       ├── Signals
+       ├── Coverage/confidence
+       └── Explanations
+       │
+       ▼
+BI / API / SQL / DS
+```
+
+Semantic definitions shall not contain source-ingestion logic.
+
+## 61.1 Metric Grain
+
+Every metric must declare its grain. Example:
+
+```text
+(country, indicator, observation_period)
+```
+
+## 61.2 Time Aggregation
+
+Every metric must specify whether aggregation is:
+
+- additive;
+- average;
+- end-of-period;
+- latest-observation;
+- weighted;
+- non-aggregatable.
+
+This prevents incorrect BI rollups.
+
+## 61.3 Metric Versioning
+
+Semantic metrics follow semantic versioning:
+
+- MAJOR: meaning/formula incompatibly changed.
+- MINOR: backward-compatible dimension or metadata enhancement.
+- PATCH: documentation or non-semantic implementation fix.
+
+# 63. Semantic Metric Registry
+
+The metric registry should contain at least:
+
+```text
+metric_id
+name
+description
+version
+owner
+grain
+unit
+formula
+source_policy
+aggregation_policy
+time_semantics
+quality_requirements
+lineage_ref
+effective_from
+deprecation_status
+```
+
+Initial metric set:
+
+- `gdp_growth_rate`
+- `inflation_rate`
+- `unemployment_rate`
+- `policy_rate`
+- `real_policy_rate`
+- `fx_return`
+- `market_volatility`
+- `debt_to_gdp`
+- `economic_momentum_index`
+- `inflation_pressure_index`
+- `market_stress_index`
+- `country_risk_score`
+
+# 64. Intelligence Layer Design
+
+Composite intelligence products must follow this pattern:
+
+```text
+Trusted Semantic Metrics
+          ↓
+Coverage Check
+          ↓
+Normalization
+          ↓
+Weighting
+          ↓
+Composite Score
+          ↓
+Confidence / Coverage
+          ↓
+Explanation Components
+```
+
+## 63.1 Example — Economic Momentum Index
+
+Candidate inputs:
+
+- GDP growth.
+- Industrial activity proxy where available.
+- Employment/unemployment trend.
+
+The methodology shall be explicit and version controlled.
+
+## 63.2 Example — Inflation Pressure Index
+
+Candidate inputs:
+
+- Inflation trend.
+- Producer-price proxy where available.
+- Policy rate / real-rate context.
+
+## 63.3 Example — Market Stress Index
+
+Candidate inputs may include:
+
+- Equity volatility proxy.
+- FX volatility.
+- Yield-spread proxy.
+
+No composite index shall be published without sufficient component coverage.
+
+# 65. Intelligence Score Data Model
+
+Recommended model:
+
+```text
+fact_intelligence_score
+------------------------
+score_id
+metric_id
+entity_id
+observation_period
+score
+score_band
+confidence
+coverage_ratio
+methodology_version
+input_snapshot_id
+calculated_at
+quality_status
+```
+
+Supporting table:
+
+```text
+fact_intelligence_component
+----------------------------
+score_id
+component_metric_id
+component_value
+normalized_value
+weight
+contribution
+quality_status
+```
+
+This structure enables explainability and reproducibility.
+
+# 66. Data Contract Implementation
+
+Contracts should be stored in the repository:
+
+```text
+docs/data/contracts/
+    sources/
+    bronze/
+    silver/
+    gold/
+    semantic/
+    intelligence/
+```
+
+A contract change must execute compatibility validation in CI.
+
+Example contract skeleton:
+
+```yaml
+dataset: gold_macro_indicators
+version: 1.2.0
+owner: klibra-data-platform
+grain:
+  - entity_id
+  - metric_id
+  - observation_date
+fields:
+  entity_id:
+    type: string
+    nullable: false
+  metric_id:
+    type: string
+    nullable: false
+  observation_date:
+    type: date
+    nullable: false
+  value:
+    type: decimal
+    nullable: true
+quality:
+  freshness_hours: 48
+  duplicate_rate_max: 0
+```
+
+# 67. Data Quality Implementation Standard
+
+Quality checks shall be mapped to contract severity.
+
+```text
+Contract
+   ↓
+DQ Rules
+   ├── Error → Quarantine/Block
+   ├── Warning → Publish with warning
+   └── Pass → Continue
+```
+
+Minimum checks per production dataset:
+
+- Schema.
+- Primary/business key uniqueness.
+- Nullability.
+- Type validity.
+- Domain/range validity.
+- Date validity.
+- Freshness.
+- Duplicate detection.
+- Row-count anomaly.
+- Referential integrity where applicable.
+
+# 68. Data Observability Model
+
+KLIBRA shall expose two complementary planes.
+
+## 67.1 Pipeline Plane
+
+Metrics:
+
+- Run duration.
+- Task retries.
+- Failure rate.
+- API latency.
+- API response codes.
+- Records received.
+- Records written.
+- Compute usage.
+
+## 67.2 Data Plane
+
+Metrics:
+
+- Freshness lag.
+- Row count.
+- Null rate.
+- Duplicate rate.
+- Distribution drift.
+- Missing periods.
+- Schema drift.
+- Quality score.
+- Coverage ratio.
+
+OpenMetadata can act as a catalog and quality visibility layer; its current documentation covers table/column quality tests, alerts, profiler signals, and lineage including column-level mappings.
+
+# 69. Data Lineage Standard
+
+Lineage must represent:
+
+```text
+Provider Endpoint
+      ↓
+Raw Object
+      ↓
+Bronze Model
+      ↓
+Silver Model
+      ↓
+Gold Product
+      ↓
+Semantic Metric
+      ↓
+Intelligence Product
+      ↓
+Consumer
+```
+
+Where practical, lineage must also capture:
+
+- Connector version.
+- Transformation version.
+- Pipeline run ID.
+- Source payload hash.
+- Semantic metric version.
+- Intelligence methodology version.
+
+# 70. Source Revision & Point-in-Time Strategy
+
+KLIBRA shall distinguish:
+
+- observation_time;
+- source_publication_time;
+- source_updated_time;
+- ingestion_time;
+- processing_time;
+- effective_from;
+- effective_to;
+- source_version;
+- payload_hash.
+
+When source history is available, the connector should preserve revised versions instead of destructive overwrite.
+
+ECB's service explicitly supports update detection through `updatedAfter` and historical data via `includeHistory`, making it an important design reference for revision-aware ingestion.
+
+# 71. Idempotency Standard
+
+Idempotency keys should be deterministic and dataset-specific.
+
+Recommended default:
+
+```text
+hash(
+  source_id,
+  dataset_id,
+  source_key,
+  observation_period,
+  source_version,
+  payload_hash
+)
+```
+
+A rerun of identical source evidence must not create duplicate published facts.
+
+# 72. Incremental Extraction Standard
+
+Connectors must choose the strongest available cursor:
+
+1. Provider update cursor.
+2. Provider update timestamp.
+3. Publication timestamp.
+4. Observation period.
+5. Content hash.
+6. Bounded/full refresh followed by deterministic dedupe.
+
+Every connector must document why its selected cursor is reliable.
+
+# 73. Rate-Limit & Provider Protection
+
+Connectors shall implement:
+
+- Retry with exponential backoff.
+- Jitter.
+- Request timeout.
+- Connection pooling where safe.
+- Respect for HTTP 429 semantics.
+- Request caching where appropriate.
+- Pagination safeguards.
+- Maximum request budgets.
+- Circuit-breaker behavior for repeated provider failure.
+
+The orchestration layer must prevent retry storms.
+
+# 74. Schema Drift Detection
+
+Source payload schemas shall be fingerprinted.
+
+A schema change shall be classified:
+
+```text
+Compatible
+Potentially Breaking
+Breaking
+```
+
+Breaking changes shall block downstream promotion until reviewed.
+
+# 75. Consumer API Architecture
+
+KLIBRA may expose a read-only API after Gold/semantic products stabilize.
+
+Recommended API layers:
+
+```text
+/metrics
+/metrics/{metric_id}
+/countries
+/intelligence
+/intelligence/{product_id}
+/metadata
+/health
+```
+
+The serving API should query curated semantic/intelligence tables rather than raw source data.
+
+The API shall expose provenance metadata where practical.
+
+# 76. BI Architecture
+
+BI tools shall consume semantic metrics rather than embedding critical formulas independently.
+
+```text
+BI Dashboard
+     ↓
+Semantic Metric
+     ↓
+Gold Model
+     ↓
+Silver / Raw lineage
+```
+
+Any dashboard-specific calculation must be classified as presentation logic, not authoritative business logic.
+
+# 77. Notebook / Data Science Access
+
+Data scientists may consume:
+
+- Gold tables.
+- Semantic extracts.
+- Intelligence scores.
+- Reproducible point-in-time snapshots.
+
+Features derived from KLIBRA metrics must retain:
+
+- metric version;
+- source snapshot;
+- calculation timestamp;
+- feature code version.
+
+# 78. Testing Pyramid
+
+Testing shall include:
+
+1. Connector unit tests.
+2. Provider contract tests.
+3. Data contract tests.
+4. Transformation tests.
+5. Data quality tests.
+6. Semantic metric tests.
+7. Intelligence methodology tests.
+8. Integration tests.
+9. End-to-end tests.
+10. Failure-injection tests.
+
+## 77.1 Intelligence Tests
+
+Each composite metric must test:
+
+- missing component;
+- out-of-range component;
+- zero coverage;
+- duplicate component;
+- version mismatch;
+- weighting correctness;
+- deterministic output.
+
+# 79. CI/CD Quality Gates
+
+Pull request:
+
+```text
+Format / Lint
+      ↓
+Unit Tests
+      ↓
+Contract Tests
+      ↓
+dbt Tests
+      ↓
+Semantic Metric Tests
+      ↓
+Infrastructure Validation
+      ↓
+Build
+```
+
+Deployment:
+
+```text
+Merge
+  ↓
+Build Artifact
+  ↓
+Staging
+  ↓
+Integration Tests
+  ↓
+Data Contract Validation
+  ↓
+Approval
+  ↓
+Production
+```
+
+# 80. Repository Architecture
+
+Recommended:
+
+```text
+KLIBRA/
+├── README.md
+├── docs/
+│   ├── product/
+│   │   └── PRD.md
+│   ├── technical/
+│   │   └── TDD.md
+│   ├── data/
+│   │   ├── source_catalog.md
+│   │   ├── data_dictionary.md
+│   │   ├── profiling/
+│   │   └── contracts/
+│   │       ├── sources/
+│   │       ├── bronze/
+│   │       ├── silver/
+│   │       ├── gold/
+│   │       ├── semantic/
+│   │       └── intelligence/
+│   ├── architecture/
+│   │   └── decisions/
+│   ├── governance/
+│   └── operations/
+│       └── runbooks/
+├── ingestion/
+│   ├── worldbank/
+│   ├── imf/
+│   ├── fred/
+│   ├── ecb/
+│   ├── alphavantage/
+│   └── coingecko/
+├── transformation/
+│   ├── bronze/
+│   ├── silver/
+│   └── gold/
+├── semantic/
+├── intelligence/
+├── orchestration/
+├── tests/
+├── infrastructure/
+├── scripts/
+└── .github/
+```
+
+# 81. Architecture Decision Records
+
+Initial ADR set:
+
+- ADR-001 — Why lakehouse/object storage is the primary historical layer.
+- ADR-002 — Source connector interface.
+- ADR-003 — Why Iceberg is/ is not required at current scale.
+- ADR-004 — Orchestration technology.
+- ADR-005 — Transformation framework.
+- ADR-006 — Semantic layer technology.
+- ADR-007 — Catalog and lineage technology.
+- ADR-008 — Data quality framework.
+- ADR-009 — Revision and point-in-time model.
+- ADR-010 — Intelligence metric methodology.
+- ADR-011 — Cloud versus local deployment.
+- ADR-012 — Serving API boundary.
+
+Each ADR shall contain:
+
+- Context.
+- Problem.
+- Options.
+- Decision.
+- Consequences.
+- Rollback/revisit trigger.
+- Status.
+
+# 82. Disaster Recovery & Replay
+
+KLIBRA shall favor replayable recovery rather than manual editing.
+
+Recovery sequence:
+
+```text
+Infrastructure Recovery
+        ↓
+Metadata Recovery
+        ↓
+Raw Evidence Validation
+        ↓
+Bronze Replay
+        ↓
+Silver Replay
+        ↓
+Gold Validation
+        ↓
+Semantic Rebuild
+        ↓
+Intelligence Rebuild
+```
+
+Target RPO/RTO remain workload-specific but the platform must document recovery assumptions.
+
+# 83. Operational Runbooks
+
+Runbooks must exist for:
+
+- API outage.
+- Authentication failure.
+- HTTP 429/rate limiting.
+- Schema drift.
+- Contract failure.
+- DQ failure.
+- Stale dataset.
+- Duplicate ingestion.
+- Backfill.
+- Revision replay.
+- Incorrect semantic metric.
+- Incorrect intelligence score.
+- Data restoration.
+- Production rollback.
+
+Every runbook must include:
+
+1. Detection.
+2. Diagnosis.
+3. Containment.
+4. Recovery.
+5. Validation.
+6. Communication.
+7. Prevention.
+
+# 84. Cost Management
+
+Cost telemetry shall cover:
+
+- Object storage.
+- Query scans.
+- Compute runtime.
+- API request volume.
+- Retry volume.
+- Egress where applicable.
+
+Optimization techniques:
+
+- Partition pruning.
+- Columnar Parquet.
+- Incremental models.
+- Request caching.
+- Bounded date ranges.
+- Appropriate file sizing.
+- Lifecycle policies.
+- Environment shutdown.
+
+# 85. Security Review Checklist
+
+Before production:
+
+- [ ] No secrets in repository.
+- [ ] IAM reviewed.
+- [ ] Production write access restricted.
+- [ ] Encryption enabled where supported.
+- [ ] Audit logs enabled.
+- [ ] API keys stored securely.
+- [ ] Public exposure reviewed.
+- [ ] Dependencies scanned.
+- [ ] Provider terms reviewed.
+- [ ] Source redistribution constraints documented.
+
+# 86. Production Readiness Review
+
+## Architecture
+
+- [ ] Failure paths documented.
+- [ ] Dependencies identified.
+- [ ] ADRs complete.
+
+## Sources
+
+- [ ] Every source live-tested.
+- [ ] Access class documented.
+- [ ] Rate limits tested or bounded.
+- [ ] Fallback strategy documented.
+
+## Data
+
+- [ ] Contracts complete.
+- [ ] Quality thresholds approved.
+- [ ] Temporal behavior understood.
+- [ ] Revisions tested.
+- [ ] Lineage verified.
+
+## Semantic Layer
+
+- [ ] Metric catalog complete.
+- [ ] Formulas tested.
+- [ ] Versioning policy implemented.
+- [ ] Owners assigned.
+
+## Intelligence
+
+- [ ] Methodology documented.
+- [ ] Component lineage available.
+- [ ] Coverage/confidence implemented.
+- [ ] Edge cases tested.
+
+## Operations
+
+- [ ] Monitoring active.
+- [ ] Alerts tested.
+- [ ] Runbooks complete.
+- [ ] Recovery tested.
+
+# 87. Technical Risks
+
+| Risk | Impact | Mitigation |
+| --- | --- | --- |
+| Provider API unavailable | High | Retry, source fallback, cached evidence |
+| Provider rate limiting | High | Backoff, budget, caching |
+| API key revoked | High | Secret rotation, access validation |
+| Schema drift | High | Contract validation |
+| Historical revision | High | Version/effective-date model |
+| Definition mismatch | High | Semantic source policy |
+| Composite metric instability | High | Coverage thresholds and methodology versioning |
+| Data quality degradation | High | DQ gates/quarantine |
+| Duplicate ingestion | High | Idempotency keys |
+| Cloud cost growth | Medium | Cost telemetry and query controls |
+| Over-engineering | Medium | ADR and measured workload |
+| Weak lineage | High | Catalog and metadata enforcement |
+| Single-engineer dependency | High | Runbooks, contracts, documentation |
+| Incorrect metric semantics | High | Semantic governance and tests |
+
+# 88. Definition of Done — Source Connector
+
+A connector is complete only when:
+
+- Access is live-tested.
+- Access class is documented.
+- Credential handling is secure.
+- Pagination is handled.
+- Rate limiting is handled.
+- Retry policy is implemented.
+- Raw payload preservation works.
+- Metadata is emitted.
+- Idempotency is proven.
+- Error classes are documented.
+- Contract tests pass.
+- Runbook exists.
+
+# 89. Definition of Done — Semantic Metric
+
+A metric is production-ready only when:
+
+- Definition is approved.
+- Grain is explicit.
+- Formula is versioned.
+- Dimensions are declared.
+- Aggregation rules are defined.
+- Source policy is documented.
+- Data quality requirements are defined.
+- Unit is explicit.
+- Tests pass.
+- Lineage exists.
+- Owner is assigned.
+
+# 90. Definition of Done — Intelligence Product
+
+An intelligence product is production-ready only when:
+
+- Methodology is documented.
+- Inputs are versioned.
+- Normalization is explicit.
+- Weights are versioned.
+- Coverage rules are defined.
+- Confidence is exposed where applicable.
+- Explainability is available.
+- Historical behavior is tested.
+- Lineage is complete.
+- Business limitations are documented.
+
+# 91. Final Technical Position
+
+KLIBRA is intentionally architected as a governed economic intelligence platform rather than a set of independent ETL scripts.
+
+The architecture separates:
+
+- Source access.
+- Raw evidence preservation.
+- Source-aligned processing.
+- Canonical standardization.
+- Data products.
+- Semantic metrics.
+- Intelligence products.
+- Serving.
+- Governance.
+- Observability.
+- Operations.
+
+The platform must be capable of answering:
+
+> What data do we have? Can we trust it? Where did it come from? What changed? Which business definition produced this metric? Can we reproduce the intelligence score?
+
+The architecture is designed to remain credible at portfolio scale while retaining a path to production-grade evolution.
+
+# 92. Document Status
+
+This TDD is the architecture baseline for KLIBRA v2.0.
+
+Required implementation artifacts:
+
+1. `source_catalog.md`
+2. Data profiling reports
+3. Initial source contracts
+4. Gold data contracts
+5. Semantic metric catalog
+6. Intelligence methodology specifications
+7. ADR set
+8. Infrastructure/environment design
+9. Operational runbooks
+10. Production readiness review evidence
+
+Any material architectural change must be documented through an ADR.
+
+# 93. Open Technical Questions
+
+These remain intentionally unresolved until source reconnaissance and workload measurement:
+
+1. Which exact IMF datasets and endpoints are required for Release 1 and how will personal access be provisioned?
+2. Which FRED series are selected as canonical policy/macro indicators?
+3. Which Alpha Vantage market series are permitted under the chosen usage tier?
+4. Which CoinGecko series are necessary, and does the free Demo tier satisfy the planned request budget?
+5. Which source combinations are semantically comparable enough for reconciliation?
+6. Which geographic crosswalk becomes canonical?
+7. Does the initial workload justify Apache Iceberg or can Parquet datasets remain sufficient?
+8. Does the initial workload justify Spark?
+9. Which semantic serving mode is required first: dbt/SQL, API, or BI-native?
+10. Which intelligence products have sufficient evidence and coverage to be published?
+11. Which SLOs can be tightened after baseline measurement?
+12. Which cloud services materially reduce operational burden without exceeding portfolio cost constraints?
+
+These questions must be answered through experiments and ADRs, not assumptions.
+
+# 94. Architecture Freeze Criteria
 
 The architecture shall not be considered final until:
 
@@ -1529,17 +2425,17 @@ The architecture shall not be considered final until:
 
 ---
 
-# 62. Recommended Initial Architecture
+# 95. Recommended Initial Architecture
 
 Subject to validation:
 
 ```text
                   OFFICIAL SOURCES
-              ┌───────┬───────┬───────┐
-              │       │       │       │
-             OJK     BI      BPS    Others
-              │       │       │       │
-              └───────┴───────┴───────┘
+              ┌────────┬────────┬────────┬──────────────┐
+              │        │        │        │              │
+         World Bank   IMF     FRED      ECB       Market APIs
+              │        │        │        │              │
+              └────────┴────────┴────────┴──────────────┘
                           │
                     Source Connectors
                           │
@@ -1598,10 +2494,10 @@ DuckDB
 
 ---
 
-# 63. Technical Risk Register
+# 96. Technical Risk Register
 
 | Risk | Impact | Mitigation |
-|---|---|---|
+| --- | --- | --- |
 | Source API unavailable | High | Retry, alternate approved source method |
 | Schema drift | High | Contract validation and change detection |
 | Historical revision | High | Version/effective-date strategy |
@@ -1615,9 +2511,9 @@ DuckDB
 
 ---
 
-# 64. Engineering Operating Model
+# 97. Engineering Operating Model
 
-FINDEX should operate using clear ownership.
+KLIBRA should operate using clear ownership.
 
 For every production dataset:
 
@@ -1643,9 +2539,9 @@ Ownership should not be implicitly assigned to whoever wrote the pipeline.
 
 ---
 
-# 65. Final Technical Position
+# 98. Final Technical Position
 
-FINDEX is architected as a layered, governed data platform rather than a collection of independent ETL scripts.
+KLIBRA is architected as a layered, governed data platform rather than a collection of independent ETL scripts.
 
 The architecture separates:
 
@@ -1670,7 +2566,7 @@ The architecture is deliberately designed to evolve after source profiling rathe
 
 ---
 
-# 66. Document Status
+# 99. Document Status
 
 This TDD is an architecture baseline.
 
@@ -1685,3 +2581,15 @@ The following artifacts are required before implementation proceeds to productio
 7. Operational runbooks
 
 Any material architectural change must be recorded through an ADR.
+
+# Appendix A — External Technical References
+
+- World Bank API: <https://datahelpdesk.worldbank.org/knowledgebase/articles/889392>
+- IMF Data APIs: <https://data.imf.org/en/Resource-Pages/IMF-API>
+- FRED API: <https://fred.stlouisfed.org/docs/api/>
+- ECB SDMX API: <https://data.ecb.europa.eu/help/api/overview>
+- Alpha Vantage: <https://www.alphavantage.co/documentation/>
+- CoinGecko Demo API: <https://docs.coingecko.com/>
+- OpenMetadata: <https://docs.open-metadata.org/>
+
+Provider capabilities and quotas are subject to change. Endpoint availability must be revalidated before implementation and at each source onboarding event.

@@ -1,27 +1,28 @@
 # Runbook — Duplicate Data
 
 **Document Type:** Operational Runbook  
-**Product:** FINDEX  
-**Status:** Draft  
-**Version:** 1.0  
-**Date:** 2026-09-02  
-**Owner:** Data Engineering Team  
+**Product:** KLIBRA  
+**Status:** Active  
+**Version:** 2.0  
+**Date:** 2026-09-03  
+**Owner:** KLIBRA Data Platform Engineering  
 **Classification:** Internal  
+**Related:** PRD §42 (idempotency), §60 (quality); TDD §15 (idempotency), §23 (quality)  
 
 ---
 
 ## 1. Purpose
 
-This runbook provides procedures for detecting, investigating, resolving, and preventing duplicate data in the FINDEX platform.
+Procedures for detecting, investigating, resolving, and preventing duplicate data in KLIBRA.
 
 ---
 
 ## 2. Detection
 
-- Duplicate rate quality check exceeds threshold (0% for key fields)
-- Monitoring alert for unexpected record count increase
-- Idempotency key collision detected
-- Downstream consumers report inconsistent counts
+- Duplicate‑rate quality check exceeds 0 % for primary‑key fields.
+- Unexpected row‑count increase (>20 % deviation from baseline).
+- Downstream consumer reports inconsistent metric values.
+- Airflow task rerun without idempotency check.
 
 ---
 
@@ -30,95 +31,91 @@ This runbook provides procedures for detecting, investigating, resolving, and pr
 ### 3.1 Identify Duplicate Type
 
 | Duplicate Type | Indicators |
-|---|---|
-| **Re-ingestion without idempotency** | Same source_version ingested twice |
-| **Pipeline rerun without idempotency** | Same pipeline run produces duplicates |
-| **Source duplication** | Source publishes identical data in multiple records |
-| **Transformation duplication** | Transformation logic produces duplicates |
-| **Join duplication** | Join logic creates unintended row multiplication |
+| --- | --- |
+| Ingestion duplicate | Same source payload ingested twice (`run_id` differs). |
+| Pipeline rerun duplicate | Same run produced multiple copies of the same record. |
+| Transformation duplicate | Join or aggregation logic created unintended row multiplication. |
+| Source duplicate | Source API returned duplicate records in a single response. |
 
-### 3.2 Root Cause Analysis
+### 3.2 Root‑Cause Investigation
 
-1. Check idempotency key definition and implementation
-2. Review pipeline run history for duplicate runs
-3. Check if connector fetched same payload twice
-4. Review transformation logic for cartesian product risks
-5. Verify deduplication logic is functioning
+1. Inspect `run_id` and `payload_hash` in the duplicate records.
+2. Review Airflow DAG run history for retries or late retries.
+3. Check the idempotency‑key definition (ADR‑007, TDD §71).
+4. Review transformation code for cross‑join or un‑grouped aggregation.
+5. Verify the connector handles pagination correctly.
 
 ---
 
 ## 4. Containment
 
-1. Halt further ingestion for affected dataset
-2. Identify the scope of duplication (how many duplicates, which periods)
-3. Quarantine duplicate records if not yet published
-4. Alert Technical Owner and Data Owner
-5. Document in incident management system
+1. Halt further ingestion for affected dataset.
+2. Quarantine duplicate records in the `quarantine/` layer.
+3. Alert **Technical Owner** and **Data Owner**.
+4. Communicate to downstream consumers that data may be affected.
 
 ---
 
 ## 5. Resolution
 
-### 5.1 Removal
+### 5.1 Ingestion Duplicate
 
-1. Identify duplicates using idempotency key (source_id, dataset_id, source_period, source_version, payload_hash)
-2. Remove duplicate records, keeping the first occurrence
-3. Verify deduplication is complete
-4. Validate quality checks pass
+1. Identify the duplicate batch via `run_id` and `payload_hash`.
+2. Delete the duplicate batch from Bronze, Silver, and Gold.
+3. Re‑run ingestion with corrected idempotency key.
+4. Verify duplicate rate returns to 0 %.
 
-### 5.2 Idempotency Fix
+### 5.2 Transformation Duplicate
 
-1. Fix idempotency key implementation
-2. Update connector to properly use idempotency key
-3. Test idempotency in staging
-4. Rerun pipeline with fixed logic
-5. Verify no new duplicates
+1. Identify the duplicate via primary‑key comparison.
+2. Fix the transformation logic (e.g., correct join condition).
+3. Re‑run the transformation from Bronze through Silver and Gold.
+4. Verify duplicate rate returns to 0 %.
 
-### 5.3 Source-Side Resolution
+### 5.3 Source Duplicate
 
-If source publishes duplicates:
-1. Implement deduplication in connector
-2. Document source duplication pattern
-3. Notify source institution if appropriate
-4. Update quality checks to detect source-side duplicates
+1. Document the source duplication pattern.
+2. Add deduplication logic in the connector using `payload_hash`.
+3. Remove the duplicate from downstream layers.
+4. Add monitoring to detect recurrence.
 
 ---
 
 ## 6. Validation
 
-1. Verify duplicate rate is 0% for key fields
-2. Verify record count matches expected
-3. Run quality checks
-4. Confirm downstream data products are consistent
-5. Validate lineage is intact
+1. Verify duplicate rate is 0 % for primary‑key fields.
+2. Verify row count matches expected baseline.
+3. Run all quality checks (P0/P1 must pass).
+4. Confirm downstream data products are consistent.
+5. Verify lineage is intact (Runbook‑Data‑Restoration if data loss occurs).
 
 ---
 
 ## 7. Communication
 
-- Alert Technical Owner immediately
-- Notify Data Owner if duplicates affected published data
-- Notify Business Owner if published data was affected
-- Document in change log
+- Alert Technical Owner and Data Owner immediately.
+- Notify Business Owner if published data was affected.
+- Provide status updates during resolution.
+- Confirm resolution in the incident ticket.
 
 ---
 
 ## 8. Prevention
 
-1. Ensure idempotency keys are properly implemented and tested
-2. Add duplicate rate monitoring and alerting
-3. Test connector with simulated duplicate payloads
-4. Add failure test for duplicate scenarios
-5. Implement deduplication at Bronze layer as safety net
+1. Ensure idempotency keys are properly implemented and tested.
+2. Add duplicate‑rate monitoring and alerting.
+3. Review transformation logic for unintended row multiplication before deployment.
+4. Test idempotency in staging before production deployment.
 
 ---
 
 ## 9. Document Version History
 
 | Version | Date | Author | Changes |
-|---|---|---|---|
-| 1.0 | 2026-09-02 | FINDEX Data Engineering | Initial draft |
+| --- | --- | --- | --- |
+| 1.0 | 2026-09-02 | FINDEX Data Engineering | Initial draft (FINDEX) |
+| 2.0 | 2026-09-03 | KLIBRA Data Platform Engineering | Re‑aligned to KLIBRA PRD v2.0 / TDD v2.0; added duplicate type table, root‑cause analysis, resolution steps |
 
 ---
 
-*This document is classified as Internal.*
+*This document is classified as Internal. Distribution is restricted to authorized KLIBRA team members and stakeholders.*

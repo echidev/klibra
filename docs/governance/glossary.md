@@ -1,208 +1,78 @@
-# FINDEX — Glossary
+# KLIBRA — Glossary
 
 **Document Type:** Glossary  
-**Product:** FINDEX — Financial Data & Intelligence Exchange  
-**Product Class:** Enterprise Financial Intelligence Data Platform  
-**Document Status:** Draft  
-**Version:** 1.0  
-**Date:** 2026-09-02  
-**Owner:** FINDEX Data Governance Team  
+**Product:** KLIBRA — Economic Intelligence Platform  
+**Product Class:** Enterprise Economic Intelligence & Data Products Platform  
+**Document Status:** Active  
+**Version:** 2.0  
+**Date:** 2026-09-03  
+**Owner:** KLIBRA Data Governance Team  
 **Classification:** Internal  
+**Related:** PRD §5 (business terms), §27 (semantic metrics), §28 (intelligence); TDD §63 (metric registry), §65 (intelligence score model)  
 
 ---
 
 ## 1. Purpose
 
-This glossary provides standardized definitions for all terms, acronyms, and jargon used across the FINDEX platform. It ensures that every team member and consumer interprets terms identically, eliminating ambiguity in data definitions, documentation, and communication.
+Provide authoritative definitions for key terms used throughout KLIBRA documentation, pipelines, contracts, and stakeholder communication. Ensures consistent understanding across teams (PRD §5, TDD §33).
 
 ---
 
-## 2. Financial and Economic Terms
-
-### 2.1 Banking and Credit
+## 2. Glossary Entries
 
 | Term | Definition |
-|---|---|
-| **CAR (Capital Adequacy Ratio)** | Ratio of a bank's capital to its risk-weighted assets; measures financial strength and ability to absorb losses |
-| **CAR (Capital Adekuasi)** | Rasio kecukangan modal bank terhadap aset berisiko |
-| **NPL (Non-Performing Loan)** | Pinjaman yang tidak kembali sesuai jadwal; indikator kualitas aset perbankan |
-| **NPL Ratio (Gross)** | Rasio NPL bruto terhadap total kredit; dihitung sebelum mengurangkan penyisihan aset |
-| **NPL Ratio (Net)** | Rasio NPL bersih setelah mengurangkan penyisihan aset |
-| **ROA (Return on Assets)** | Rasio laba bersih terhadap total aset; mengukur efisiensi penggunaan aset |
-| **ROE (Return on Equity)** | Rasio laba bersih terhadap modal sendiri |
-| **LDR (Loan to Deposit Ratio)** | Rasio total kredit terhadap dana pihak ketiga; mengukur likuiditas bank |
-| **ALDR (Asset-Liability Duration Ratio)** | Rasio durasi aset terhadap liabilitas |
-| **Third-Party Funds (Dana Pihak Ketiga)** | Total dana yang dikelola bank dari pihak ketiga, mencakup giro, tabungan, dan deposito |
-| **Working Capital Credit (Kredit Modal Kerja)** | Kredit yang diberikan untuk mendanai kegiatan operasional perusahaan |
-| **Investment Credit (Kredit Investasi)** | Kredit yang diberikan untuk pendanaan investasi jangka panjang |
-| **Consumption Credit (Kredit Konsumsi)** | Kredit yang diberikan untuk keperluan konsumsi pribadi |
-| **Financing (Pembiayaan)** | Dana yang diberikan oleh bank syariah berdasarkan akad tertentu |
-| **NPSV (Net Performing Financing)** | Rasio pembiayaan lancar terhadap total pembiayaan pada bank syariah |
-| **Loan Loss Reserves** | Penyisihan aset untuk mengantisipasi kerugian dari kredit yang tidak kembali |
-
-### 2.2 Monetary and Macroeconomic
-
-| Term | Definition |
-|---|---|
-| **BI-Rate** | Suku bunga kebijakan yang ditetapkan oleh Bank Indonesia sebagai acuan suku bunga di pasar |
-| **Base Money (Uang Base)** | Uang beredar yang terdiri dari uang kartal dan giro bank di Bank Indonesia |
-| **Reserve Money** | Uang base ditambah simpanan wajib bank |
-| **Money Supply (M1, M2)** | M1: uang kartal + giro; M2: M1 + tabungan + deposito + surat berharga |
-| **CPI (Consumer Price Index)** | Indeks harga konsumen; mengukur perubahan harga barang dan jasa konsumsi |
-| **Core Inflation** | Inflasi yang mengesampingkan komponen volatile food dan administered prices |
-| **Exchange Rate (Nilai Tukar)** | Harga mata uang domestik terhadap mata uang asing |
-| **DJI (Desk Index)** | Indeks nilai tukar mata uang Indonesia terhadap berbagai mata uang utama |
-| **FX Reserves (Cadangan Devisa)** | Cadangan aset valuta asing yang dimiliki oleh Bank Indonesia |
-| **GDP (Gross Domestic Product / PDB)** | Produk Domestik Bruto; nilai total barang dan jasa yang dihasilkan dalam suatu wilayah |
-| **GDP Nominal** | PDB dihitung dengan harga berlaku (current prices) |
-| **GDP Real** | PDB dihitung dengan harga tetap (constant prices) |
-| **Balance of Payments (Neraca Pembayaran)** | Catatan semua transaksi ekonomi antara penduduk dan bukan penduduk suatu negara |
-| **Trade Balance (Neraca Perdagangan)** | Selisih antara nilai ekspor dan impor suatu negara |
-| **Terms of Trade** | Rasio harga ekspor terhadap harga impor |
-
-### 2.3 Capital Markets
-
-| Term | Definition |
-|---|---|
-| **Market Capitalization (Kapitalisasi Pasar)** | Total nilai pasar dari semua saham yang dicatat di bursa |
-| **IHSG (Indeks Harga Saham Gabungan)** | Indeks yang mencerminkan performa seluruh saham yang dicatat di BEI |
-| **Mutual Fund AUM (Aset Kelolaan)** | Total aset yang dikelola oleh dana investasi |
-| **SUN (Surat Utang Negara)** | Surat utang yang diterbitkan oleh pemerintah RI |
-| **Sukuk** | Surat berharga syariah yang bersifat aset-back |
-| **Bond Issuance** | Penerbitan obligasi oleh korporasi atau pemerintah |
-
-### 2.4 Financial Sector
-
-| Term | Definition |
-|---|---|
-| **OJK (Otoritas Jasa Keuangan)** | Lembaga regulator yang mengawasi sektor jasa keuangan di Indonesia |
-| **BI (Bank Indonesia)** | Bank sentral Republik Indonesia |
-| **BPS (Badan Pusat Statistik)** | Badan statistik nasional Indonesia |
-| **BPR (Bank Perkreditan Rakyat)** | Bank yang kegiatannya hanya terbatas dalam menghimpun dana masyarakat dan menyalurkan kredit |
-| **Fintech** | Perusahaan yang menyediakan layanan keuangan berbasis teknologi |
-| **P2P Lending (Pinjaman Pin到Pin)** | Pinjaman langsung antara peminjam dan penanggung dana melalui platform digital |
-| **E-Money (Uang Elektronik)** | Nilai yang disimpan dalam media elektronik untuk pembayaran |
-| **BI-RTGS** | Sistem Penyelesaian Gross Real Time Bank Indonesia |
-| **BI-SSSS** | Sistem Bank Indonesia-Skripsi Nasional |
-
-### 2.5 Socio-Economic
-
-| Term | Definition |
-|---|---|
-| **Poverty Rate (Tingkat Kemiskinan)** | Persentase penduduk yang berada di bawah garis kemiskinan |
-| **Gini Ratio (Rasio Gini)** | Indeks pengukuran ketimpangan pendapatan (0 = sama rata, 1 = sangat tidak sama) |
-| **Unemployment Rate (Tingkat Pengangguran Terbuka)** | Persentase angkatan kerja yang tidak bekerja dan sedang mencari pekerjaan |
-| **Labor Force (Angkatan Kerja)** | Jumlah penduduk yang bekerja atau sedang mencari pekerjaan |
-| **Dependency Ratio (Rasio Ketergantungan)** | Rasio penduduk usia tidak produktif terhadap penduduk usia produktif |
-| **Population (Populasi/Penduduk)** | Jumlah penduduk di suatu wilayah |
+| --- | --- |
+| **Observation Time** | The point in time the economic event or measurement refers to (e.g., a month’s GDP figure). |
+| **Publication Time** | The timestamp when a source publishes the observation (may differ from observation time). |
+| **Ingestion Time** | The timestamp when KLIBRA ingests the payload into the Raw layer. |
+| **Effective From / To** | Temporal bounds indicating when a particular version of a record is authoritative (SCD‑2 semantics). |
+| **Metric** | A quantitative measurement defined in the semantic layer (e.g., `gdp_growth_rate`). |
+| **Grain** | The dimensionality of a metric, expressed as a tuple (e.g., `(country, indicator, observation_period)`). |
+| **Semantic Metric** | A governed business metric defined in the semantic layer, with formula, version, and lineage. |
+| **Intelligence Product** | A composite score derived from multiple semantic metrics (e.g., `intelligence_market_stress`). |
+| **Source Catalog** | Registry of approved public data sources, access class, and endpoint details (PRD §10.1). |
+| **Access Class** | Classification of source access requirements: **A** – no key, **B** – self‑service key, **C** – portal/account required (PRD §10.1). |
+| **Idempotency Key** | Deterministic identifier ensuring exactly‑once ingestion (source_id, dataset_id, period, version, payload_hash). |
+| **Quarantine** | Layer for records that failed blocking quality checks; isolated for investigation. |
+| **Gold Layer** | Consumer‑oriented data products ready for downstream consumption. |
+| **Bronze Layer** | Source‑aligned, minimally transformed representation preserving original fields. |
+| **Silver Layer** | Standardized, validated dataset conforming to the canonical model. |
+| **Lineage** | End‑to‑end traceability from Gold product back to the original source payload. |
+| **Backfill** | Explicit re‑processing of historical periods to correct or augment data (Runbook‑Backfill). |
+| **Schema Drift** | Unplanned changes in source schema that may affect pipelines (TDD §19). |
+| **P0 / P1 / P2 / P3** | Quality severity levels defined in TDD §22 and used throughout the platform. |
+| **ADR** | Architecture Decision Record – captured design decisions (see `docs/architecture/decisions/`). |
+| **SLA** | Service Level Agreement – e.g., freshness SLA (99% of scheduled runs). |
+| **RPO / RTO** | Recovery Point Objective / Recovery Time Objective (Disaster Recovery). |
+| **Data Contract** | Formal specification of dataset schema, quality thresholds, retention, and lineage (PRD §29, TDD §66). |
+| **Metric Grain** | The set of dimensions that uniquely identify a metric observation. |
+| **Temporal Semantics** | Rules for handling observation vs. publication vs. ingestion timestamps. |
+| **Effective Date** | The date when a data product version becomes active for consumers. |
+| **Versioning** | Semantic versioning applied to metrics, contracts, and intelligence methodologies. |
+| **Backfill Run ID** | Unique identifier for a backfill execution, recorded in ingestion metadata. |
+| **Connector Interface** | Standard set of functions for source connectors (ADR‑002). |
+| **Airflow DAG** | Directed acyclic graph defining the execution order of pipeline stages (ADR‑004). |
+| **AWS S3 Lifecycle Policy** | Automated transition of objects between storage classes (ADR‑008). |
+| **Data Steward** | Individual responsible for data quality and documentation for a specific domain. |
+| **Business Consumer** | End‑user or downstream system that consumes Gold products or semantic metrics. |
 
 ---
 
-## 3. Data and Platform Terms
+## 3. Maintenance
 
-| Term | Definition |
-|---|---|
-| **Observation Date** | Tanggal periode ekonomi yang dirujuk oleh data; tidak sama dengan tanggal publikasi atau ingestion |
-| **Publication Date** | Tanggal source menerbitkan data |
-| **Ingestion Date** | Tanggal FINDEX menerima dan menyimpan data |
-| **Effective Date** | Tanggal observasi menjadi versi otoritatif |
-| **Effective To** | Tanggal observasi digantikan oleh revisi |
-| **Layer (Lapisan)** | Tahapan pemrosesan data: Raw, Bronze, Silver, Gold |
-| **Canonical Model** | Model data standar yang menjadi acuan semua dataset |
-| **Data Contract** | Kesepakatan mengikat tentang skema, kualitas, dan persyaratan dataset |
-| **Data Dictionary** | Referensi definisi model data kanonik dan field |
-| **Source Catalog** | Katalog semua sumber data yang terdaftar |
-| **Quality Gate** | Pemeriksaan kualitas yang harus dilewati sebelum data dipublikasikan |
-| **Quarantine** | Area isolasi untuk data yang gagal kontrol kualitas |
-| **Idempotency** | Sifat operasi yang menghasilkan hasil sama meski dijalankan berulang kali |
-| **Lineage** | Jejak asal-usul data dari source hingga konsumen |
-| **Freshness** | Seberapa baru data; selisih antara waktu publikasi dan waktu ketersediaan |
-| **SLA (Service Level Agreement)** | Kesepakatan tingkat layanan; dalam FINDEX berlaku untuk ketepatan waktu publikasi |
-| **Backfill** | Operasi pengisian data historis secara eksplisit |
-| **Point-in-Time Analysis** | Analisis yang merekonstruksi data pada titik waktu tertentu |
-| **Schema Drift** | Perubahan struktur skema sumber yang tidak diumumkan |
-| **Reproducibility** | Kemampuan untuk mereproduksi hasil olahan dari input dan versi transformasi yang tercatat |
-| **Traceability** | Kemampuan untuk menelusuri data dari nilai kritis kembali ke sumber |
+- Glossary entries are stored in this markdown file and version‑controlled.
+- New terms added via pull request; must include definition and cross‑reference to PRD/TDD.
+- Quarterly review by Data Governance Committee.
 
 ---
 
-## 4. Quality Terms
-
-| Term | Definition |
-|---|---|
-| **Completeness** | Kecerlangan semua record dan field yang diharapkan tersedia |
-| **Uniqueness** | Tidak adanya record duplikat yang tidak diinginkan |
-| **Validity** | Kepatuhan nilai terhadap tipe, rentang, dan format yang didefinisikan |
-| **Consistency** | Kejelasan logis antar field dan dataset |
-| **Referential Integrity** | Kejelasan hubungan foreign key yang resolve dengan benar |
-| **Freshness** | Ketepatan waktu ketersediaan data |
-| **Temporal Validity** | Kejelasan semantik temporal (observation, publication, ingestion time) |
-| **Business-Rule Compliance** | Kepatuhan terhadap aturan bisnis domain |
-| **Quality Score** | Skor numerik (0.00–100.00) dari hasil evaluasi kualitas |
-
----
-
-## 5. Severity and Status Terms
-
-| Term | Code | Definition |
-|---|---|---|
-| **Critical** | P0 | Data produksi tidak aman atau integritas platform terganggu |
-| **High** | P1 | Dataset kritis tidak dapat dipercaya atau secara material tidak lengkap |
-| **Medium** | P2 | Degradasi kualitas dengan output yang dapat digunakan tetapi terbatas |
-| **Low** | P3 | Anomali non-blocking atau masalah metadata/dokumentasi |
-| **Accepted** | ACCEPTED | Data lulus semua kontrol kualitas |
-| **Accepted with Warning** | ACCEPTED_WARNING | Data lulus tetapi dengan anomali yang dicatat |
-| **Quarantined** | QUARANTINED | Data diisolasi untuk investigasi |
-| **Rejected** | REJECTED | Data gagal kontrol kualitas blocking |
-
----
-
-## 6. Technical Terms
-
-| Term | Definition |
-|---|---|
-| **Parquet** | Format penyimpanan kolom analitik yang efisien |
-| **dbt (data build tool)** | Framework transformasi SQL berbasis dependency graph |
-| **Airflow** | Platform orkestrasi workflow |
-| **Spark** | Mesin pemrosesan terdistribusi |
-| **DuckDB** | Mesis analitik lokal |
-| **Athena** | Layanan query serverless untuk data lake |
-| **MinIO** | Implementasi object storage kompatibel S3 untuk pengembangan lokal |
-| **Terraform** | Tool Infrastructure as Code |
-| **GitHub Actions** | Platform CI/CD |
-| **Idempotency Key** | Kunci unik yang menjamin operasi berulang tidak menghasilkan duplikasi |
-| **Partition** | Pembagian data berdasarkan dimensi (source, dataset, tahun, bulan) untuk optimasi query |
-| **Predicate Pushdown** | Optimasi query dengan mendorong filter ke level penyimpanan |
-
----
-
-## 7. Geographic Terms
-
-| Term | Definition |
-|---|---|
-| **National** | Level nasional |
-| **Province (Provinsi)** | Level provinsi |
-| **Regency (Kabupaten)** | Level kabupaten |
-| **City (Kota)** | Level kota |
-| **District (Kecamatan)** | Level kecamatan |
-| **BPS Province Code** | Kode provinsi yang diterbitkan oleh Badan Pusat Statistik |
-
----
-
-## 8. Document Version History
+## 4. Document Version History
 
 | Version | Date | Author | Changes |
-|---|---|---|---|
-| 1.0 | 2026-09-02 | FINDEX Data Governance Team | Initial draft — financial, data platform, quality, and technical terms |
+| --- | --- | --- | --- |
+| 1.0 | 2026-09-02 | FINDEX Data Governance Team | Initial draft — FINDEX glossary |
+| 2.0 | 2026-09-03 | KLIBRA Data Governance Team | Updated for KLIBRA PRD v2.0 / TDD v2.0; added KLIBRA‑specific terms and aligned definitions |
 
 ---
 
-## 9. Document Status
-
-This glossary is a living document that will be expanded as new terms are introduced. All new terms must be added to the glossary before being used in production documentation.
-
-This document is a companion to the Data Dictionary, Data Governance Policy, and Data Contracts.
-
----
-
-*This document is classified as Internal. Distribution is restricted to authorized FINDEX team members and stakeholders.*
+*This document is classified as Internal. Distribution is restricted to authorized KLIBRA team members and stakeholders.*

@@ -1,363 +1,159 @@
-# FINDEX — Data Governance Policy
+# KLIBRA — Data Governance Policy
 
 **Document Type:** Data Governance Policy  
-**Product:** FINDEX — Financial Data & Intelligence Exchange  
-**Product Class:** Enterprise Financial Intelligence Data Platform  
-**Document Status:** Draft  
-**Version:** 1.0  
-**Date:** 2026-09-02  
-**Owner:** FINDEX Data Governance Team  
+**Product:** KLIBRA — Economic Intelligence Platform  
+**Product Class:** Enterprise Economic Intelligence & Data Products Platform  
+**Document Status:** Active  
+**Version:** 2.0  
+**Date:** 2026-09-03  
+**Owner:** KLIBRA Data Governance Team  
 **Classification:** Internal  
+**Related:** PRD §16, §17, §30‑§33; TDD §31, §57, §59, §61, §65, §71  
 
 ---
 
 ## 1. Purpose
 
-This Data Governance Policy establishes the framework for how data is managed, owned, defined, quality-controlled, and governed across the FINDEX platform. It ensures that every data product meets standards of trustworthiness, traceability, and accountability.
-
-The policy exists to:
-
-- Define who is responsible for every piece of data in the platform
-- Establish clear definitions that do not need to be re-interpreted by every consumer
-- Ensure quality is measurable and enforced, not aspirational
-- Make changes to critical definitions visible, documented, and reviewed
-- Provide a foundation for trust between data producers and data consumers
+The Data Governance Policy establishes the framework for ownership, stewardship, quality, lineage, and lifecycle management of all data assets within KLIBRA. It ensures that data is trustworthy, well‑documented, and governed according to business needs and regulatory constraints (PRD §30‑§33, TDD §59‑§62).
 
 ---
 
 ## 2. Scope
 
-This policy applies to all data within the FINDEX platform, including but not limited to:
-
-- Raw source data and acquisition metadata
-- Bronze, Silver, and Gold layer datasets
-- Operational metadata and pipeline execution records
-- Data contracts, data dictionaries, and metadata definitions
-- Quality evaluation results and quarantine records
-- Source catalog and any downstream analytical data products
-
-The policy applies to all roles: Platform Admin, Data Engineer, Data Analyst, Data Scientist, Business Consumer, Data Governance, and Read-only Auditor.
+Applies to all data layers (Raw, Bronze, Silver, Gold, Quarantine, Metadata), semantic metrics, intelligence products, operational metadata, and associated contracts.
 
 ---
 
-## 3. Principles
+## 3. Data Ownership Model (Three‑Owner Model)
 
-### 3.1 Accountability
+| Ownership Role | Responsibilities |
+| --- | --- |
+| **Business Owner** | Defines business definitions, KPIs, and acceptance criteria for data products; signs off on release of Gold products and semantic metrics (PRD §30). |
+| **Technical Owner** | Implements pipelines, ensures technical quality, maintains contracts, monitors data health, and leads incident response (TDD §31, §57). |
+| **Data Owner** | Custodian of the raw source; ensures source compliance, updates source catalog, manages source-level access (PRD §12, §13). |
 
-Every dataset — from Raw to Gold — must have a named, accountable owner. Ownership is not implicit, not shared ambiguously, and does not default to the person who wrote the pipeline.
-
-### 3.2 Transparency
-
-Data definitions, quality outcomes, lineage, and known limitations must be documented and accessible to authorized consumers. Consumers must not need to reverse-engineer data semantics.
-
-### 3.3 Consistency
-
-Identical concepts must have identical definitions across the platform. Cross-source comparisons must be semantically valid. Where definitions differ, the difference must be documented explicitly.
-
-### 3.4 Quality by Design
-
-Quality controls are embedded in ingestion and transformation pipelines, not applied as a final manual inspection step. Quality outcomes are recorded, visible, and actionable.
-
-### 3.5 Least Privilege
-
-Access to datasets and platform components is restricted to the minimum required for each role. Production write privileges are restricted to a minimal set of authorized services and personnel.
-
-### 3.6 Reproducibility
-
-Processing results must be reproducible using recorded source inputs and transformation versions. Historical datasets must be reconstructable where source and processing history permit.
-
-### 3.7 Traceability
-
-Every critical analytical value must be traceable back to its source dataset and processing history. Lineage must be available at dataset level initially and field level where practical.
-
-### 3.8 Continuous Improvement
-
-Governance processes, definitions, and quality thresholds must be reviewed and refined periodically. Governance is not a one-time activity but an ongoing operational discipline.
+All three owners must sign off on any **Critical** change (see Change Management Process).
 
 ---
 
-## 4. Governance Roles and Responsibilities
+## 4. Data Stewardship
 
-### 4.1 Business Owner
+Data Stewards are assigned per domain (e.g., macro‑economics, market data, credit indicators). Responsibilities:
 
-| Responsibility | Description |
-|---|---|
-| Definition | Defines and approves the business definition of the data product |
-| Acceptance | Accepts or rejects data products against business requirements |
-| Priority | Determines business priority and sequencing of datasets |
-| Communication | Communicates business context and changes to downstream consumers |
-| Dispute Resolution | Resolves disputes over business definitions or interpretations |
-
-### 4.2 Data Owner
-
-| Responsibility | Description |
-|---|---|
-| Quality | Ensures data quality thresholds are met and monitored |
-| Governance | Owns the data dictionary, data contracts, and field definitions |
-| Definitions | Maintains and updates business definitions and the glossary |
-| Lineage | Ensures lineage is documented and maintained |
-| Change Management | Reviews and approves changes to critical definitions |
-| Access Policy | Defines access rules and classification for the dataset |
-| Audit | Participates in periodic data audits |
-
-### 4.3 Technical Owner
-
-| Responsibility | Description |
-|---|---|
-| Pipeline | Builds, maintains, and operates the ingestion and transformation pipeline |
-| Reliability | Ensures pipeline reliability, retry logic, and recovery procedures |
-| Incident Response | Responds to pipeline failures and data quality incidents |
-| Monitoring | Sets up and maintains monitoring and alerting for the pipeline |
-| Infrastructure | Maintains infrastructure as code and deployment procedures |
-| Documentation | Maintains technical documentation and runbooks |
-
-### 4.4 Data Governance (Oversight)
-
-| Responsibility | Description |
-|---|---|
-| Policy Enforcement | Ensures compliance with this Data Governance Policy |
-| Standards | Maintains standards for definitions, naming, and documentation |
-| Audit | Conducts periodic audits of data products, quality, and lineage |
-| Approval | Approves changes to critical business definitions |
-| Escalation | Escalates unresolved governance issues to appropriate stakeholders |
-| Reporting | Produces governance reports for executive management |
-
-### 4.5 Platform Admin
-
-| Responsibility | Description |
-|---|---|
-| Access Control | Manages IAM roles, access policies, and least privilege enforcement |
-| Infrastructure | Manages production infrastructure and environment separation |
-| Security | Ensures encryption, secrets management, and security controls |
-| Operations | Manages production deployment and operational health |
+- Maintain **data dictionary** entries (`docs/data/data_dictionary.md`).
+- Review and approve **data contracts** for new datasets and changes.
+- Monitor **quality metrics** (P0/P1) and trigger remediation.
+- Ensure **lineage documentation** is up‑to‑date (`lineage_policy.md`).
+- Coordinate with **Source Owners** for source updates.
 
 ---
 
-## 5. Data Ownership Model
+## 5. Data Quality Framework
 
-### 5.1 Ownership Assignment
+KLIBRA classifies quality severity (TDD §22) and enforces thresholds (PRD §32.3):
 
-Every production dataset must have three distinct owners assigned:
+- **P0 (Critical)** – Must not be published; pipeline blocks.
+- **P1 (High)** – Must be flagged; may be published with warning.
+- **P2 (Medium)** – Acceptable but monitored.
+- **P3 (Low)** – Informational.
 
-```text
-Dataset: gold_credit_growth
-├── Business Owner: Credit Team Lead
-├── Data Owner: Data Governance Representative
-└── Technical Owner: Data Engineering Lead
-```
-
-Ownership is documented in the **Data Ownership Registry** (`docs/governance/data_ownership_registry.md`) and the **Data Contract** for each dataset.
-
-### 5.2 Ownership Rules
-
-1. **No implicit ownership.** Ownership is explicitly assigned and documented. It does not default to the engineer who wrote the pipeline.
-2. **Separation of duties.** Business Owner, Data Owner, and Technical Owner must be different individuals or distinct team roles.
-3. **Named individuals.** Ownership must specify named individuals or clearly defined team roles, not generic role labels.
-4. **Documentation.** Ownership is recorded in version-controlled documents and the operational metadata system.
-5. **Succession.** An ownership succession plan must exist. If an owner leaves, reassignment is documented and communicated.
-6. **Review.** Ownership is reviewed quarterly for accuracy and continued appropriateness.
-
-### 5.3 Cross-Dataset Ownership
-
-When a data product aggregates data from multiple source datasets:
-
-- Each source dataset retains its own ownership
-- The Gold data product has its own Business Owner, Data Owner, and Technical Owner
-- The Gold Data Owner is accountable for the aggregated product's definitions and quality
-- Cross-dataset definitions and mappings must be documented in the Data Dictionary
+All datasets must define **quality thresholds** in their data contracts (PRD §29) and implement **validation rules** at Bronze (raw checks), Silver (standardization checks), and Gold (business rule checks).
 
 ---
 
-## 6. Definition Management
+## 6. Data Lineage Policy
 
-### 6.1 Business Definitions
+Lineage must be captured at **dataset level** for all datasets and **field level** where practical (TDD §28, ADR‑008). Lineage includes:
 
-Every data product must have a documented business definition covering:
+- Source identifier, dataset ID, version, and retrieval timestamps.
+- Transformation step (Bronze, Silver, Gold) and responsible code version.
+- Effective‑from / effective‑to timestamps for versioned records (ADR‑007).
+- Connection to semantic metric definitions and intelligence methodology.
 
-| Element | Description |
-|---|---|
-| **Name** | Human-readable, unambiguous name |
-| **Definition** | Precise description of what the data represents |
-| **Scope** | What is included and excluded |
-| **Owner** | Business owner accountable for the definition |
-| **Source** | Origin of the data |
-| **Calculation** | How the metric is derived, if applicable |
-| **Units** | Standard unit of measurement |
-| **Frequency** | Update cadence |
-| **Known limitations** | Caveats consumers must understand |
-
-### 6.2 Definition Change Process
-
-Changes to critical business definitions must follow a controlled process:
-
-```text
-1. Change proposed via documentation update
-   ↓
-2. Impact assessment (affected datasets, consumers, downstream systems)
-   ↓
-3. Data Governance review
-   ↓
-4. Business Owner approval
-   ↓
-5. Consumer notification (minimum 14 days lead time)
-   ↓
-6. Staging validation
-   ↓
-7. Approval gate
-   ↓
-8. Production deployment with versioned definition
-```
-
-### 6.3 Definition Versioning
-
-- All definitions are version-controlled
-- Each definition change creates a new version entry with date, author, rationale, and impact
-- Prior versions of definitions are preserved for historical reference
-- Data products reference a specific definition version for reproducibility
-
-### 6.4 Glossary
-
-A centralized glossary (`docs/governance/glossary.md`) maintains all standard terms, acronyms, and their definitions. The glossary is the authoritative reference for terminology across the platform.
+Lineage records stored in **metadata layer** (`/metadata/`) and exposed via OpenMetadata (PRD §30). Updates to lineage must be audited.
 
 ---
 
-## 7. Data Classification
+## 7. Data Retention & Archival
 
-### 7.1 Classification Levels
+Retention policy aligns with PRD §50 and TDD §50:
 
-| Classification | Description | Handling Requirements |
-|---|---|---|
-| **Public** | Data that can be freely shared | No restrictions; standard distribution |
-| **Internal** | Data for authorized FINDEX team members | Access restricted to authorized personnel; no external sharing |
-| **Confidential** | Sensitive data requiring restricted access | Strict access control; encryption required; audit logging |
+| Layer | Minimum Retention | Maximum Retention |
+| --- | --- | --- |
+| Raw | 10 years (immutable) | 30 years (per regulatory need) |
+| Bronze | 5 years | 10 years |
+| Silver | 3 years | 7 years |
+| Gold | 2 years | 5 years |
+| Quarantine | 90 days | 180 days |
+| Metadata | 5 years | 10 years |
 
-### 7.2 Classification Rules
-
-1. All FINDEX data products default to **Internal** unless explicitly classified otherwise.
-2. Public data sources do not eliminate the need for classification — the data product classification may differ from the source classification.
-3. FINDEX intentionally does not ingest personal or confidential customer information.
-4. Classification must be documented in the dataset's Data Contract.
-5. Classification changes require Data Governance approval.
+Retention is enforced via **S3 lifecycle policies** (ADR‑008) and RDS backup retention.
 
 ---
 
-## 8. Quality Governance
+## 8. Security & Privacy
 
-### 8.1 Quality Framework
-
-Quality is evaluated at multiple levels (batch, record, dataset, business) with severity classifications P0–P3. Quality outcomes are: Accepted, Accepted with Warning, Quarantined, or Rejected.
-
-Quality thresholds are defined per dataset in the Data Contract, not applied universally.
-
-### 8.2 Quality Review Cadence
-
-| Activity | Frequency | Owner |
-|---|---|---|
-| Quality threshold review | Quarterly | Data Owner |
-| Quality metric reporting | Monthly | Technical Owner |
-| Quality audit | Quarterly | Data Governance |
-| Quality trend analysis | Monthly | Data Owner + Technical Owner |
-| Critical quality incident review | Per incident | Technical Owner + Data Governance |
-
-### 8.3 Escalation
-
-Quality issues are escalated based on severity:
-
-- **P0 (Critical):** Immediate escalation to Technical Owner and Data Governance within 1 hour
-- **P1 (High):** Escalation to Data Owner and Technical Owner within 4 hours
-- **P2 (Medium):** Logged and reviewed in weekly quality meeting
-- **P3 (Low):** Documented; reviewed in monthly governance report
+- **Encryption in transit** (TLS 1.2+) for all data movement.
+- **Encryption at rest** for Internal and Confidential data (SSE‑KMS).
+- **Least‑privilege IAM** (access_review_process.md).
+- **Secrets management** via AWS Secrets Manager (PRD §33, TDD §32).
+- **Audit logging** for all read/write actions on Confidential data (CloudTrail, CloudWatch).
+- **No PII** ingested; policy explicitly forbids collecting personal data (PRD §5, §71).
 
 ---
 
-## 9. Lineage Governance
+## 9. Governance Processes
 
-### 9.1 Lineage Requirements
-
-- Lineage must exist for all production data products
-- Lineage must be available at dataset level initially
-- Field-level lineage is required where practical
-- Lineage must trace from Consumer → Gold → Silver → Bronze → Raw → Source
-
-### 9.2 Lineage Verification
-
-- Lineage is verified as part of production readiness review
-- Lineage integrity is checked when source changes are detected
-- Broken or missing lineage is treated as a quality issue
+- **Access Review Process** (see `access_review_process.md`).
+- **Change Management Process** (see `change_management_process.md`).
+- **Data Quality Review** – weekly quality dashboard review (Monitoring & Alerts).
+- **Lineage Review** – quarterly audit of lineage completeness.
+- **Retention Review** – annual check against legal requirements.
+- **Incident Management** – see `incident_management.md`.
 
 ---
 
-## 10. Access Governance
+## 10. Roles & Responsibilities Matrix
 
-### 10.1 Role-Based Access
-
-| Role | Access Level |
-|---|---|
-| Platform Admin | Full platform access; infrastructure management |
-| Data Engineer | Pipeline development, staging, production read |
-| Data Analyst | Curated datasets read access |
-| Data Scientist | Historical datasets and features read access |
-| Business Consumer | Data product read access; no raw/silver access |
-| Read-only Auditor | Audit logs and metadata; no data modification |
-
-### 10.2 Access Review
-
-- Access reviews conducted quarterly
-- Production write privileges restricted to authorized services and personnel only
-- Access changes documented and audited
-- Least privilege enforced at all times
+| Role | Data Ownership | Data Stewardship | Quality Monitoring | Lineage Management | Incident Response |
+| --- | --- | --- | --- | --- | --- |
+| Platform Admin | Yes (infrastructure) | No | No | No | Lead |
+| Data Engineer | Yes (pipeline) | Yes (technical) | Yes | Yes | Participate |
+| Data Analyst | Yes (business) | Yes (semantic) | Yes (consumption) | No | Participate |
+| Data Scientist | Yes (feature) | Yes (semantic) | Yes | No | Participate |
+| Business Consumer | Yes (product) | No | Yes (usage) | No | No |
+| Data Governance | Yes (policy) | Yes (oversight) | Yes (framework) | Yes (policy) | Yes (oversight) |
 
 ---
 
-## 11. Compliance and Audit
+## 11. Documentation Requirements
 
-### 11.1 Audit Trail
+All data assets must have:
 
-All sensitive operations must be auditable:
+- **Data contract** (source, schema, quality thresholds, retention).
+- **Data dictionary entry** (description, grain, dimensions, lineage).
+- **Metric definition** (for semantic metrics) – includes formula, version, owner.
+- **Intelligence methodology doc** (for intelligence products).
+- **Lineage map** – stored in OpenMetadata.
+- **Retention schedule** – documented in contract.
 
-- Data product publications
-- Schema changes
-- Quality threshold modifications
-- Access changes
-- Backfill operations
-- Production deployments
-
-### 11.2 Audit Schedule
-
-| Audit Type | Frequency | Scope | Owner |
-|---|---|---|---|
-| Data quality audit | Quarterly | Quality metrics and outcomes | Data Governance |
-| Lineage audit | Quarterly | Lineage completeness and accuracy | Data Governance |
-| Access audit | Quarterly | Access permissions and changes | Platform Admin |
-| Definition audit | Quarterly | Definition accuracy and consistency | Data Owner |
-| Compliance audit | Annually | Policy compliance | Data Governance + Security |
+Documentation lives in the `docs/` directory, version‑controlled, and reviewed per change management.
 
 ---
 
-## 12. Policy Exceptions
+## 12. Review & Approval
 
-Policy exceptions require:
-
-1. Formal written request with rationale
-2. Impact assessment
-3. Data Governance approval
-4. Time-bound exception with review date
-5. Documentation in the exception register
+The Data Governance Policy is reviewed annually by the **Data Governance Committee** (Platform Admin, Data Governance Lead, Business Owner). Any material amendment follows the Change Management Process and requires a **major** change classification.
 
 ---
 
 ## 13. Document Version History
 
 | Version | Date | Author | Changes |
-|---|---|---|---|
-| 1.0 | 2026-09-02 | FINDEX Data Governance Team | Initial draft — governance framework, roles, definition management, quality governance, access governance, audit |
+| --- | --- | --- | --- |
+| 1.0 | 2026-09-02 | FINDEX Data Governance Team | Initial draft — FINDEX baseline |
+| 2.0 | 2026-09-03 | KLIBRA Data Governance Team | Updated to reflect KLIBRA PRD v2.0 / TDD v2.0; added three‑owner model, clarified public‑data‑only scope, aligned quality thresholds, added lineage expectations |
 
 ---
 
-## 14. Document Status
-
-This Data Governance Policy is a draft artifact subject to stakeholder review and approval. It is a companion document to the PRD, TDD, Source Catalog, Data Dictionary, Data Contracts, and Data Ownership Registry.
-
----
-
-*This document is classified as Internal. Distribution is restricted to authorized FINDEX team members and stakeholders.*
+*This document is classified as Internal. Distribution is restricted to authorized KLIBRA team members and stakeholders.*

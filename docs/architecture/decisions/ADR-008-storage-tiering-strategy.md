@@ -1,102 +1,75 @@
 # ADR-008 — Storage Tiering Strategy
 
-**Status:** Proposed  
-**Date:** 2026-09-02  
-**Author:** FINDEX Data Platform Engineering  
-**Deciders:** FINDEX Architecture Team  
+**Status:** Accepted  
+**Date:** 2026-09-03  
+**Author:** KLIBRA Data Platform Engineering  
+**Deciders:** KLIBRA Architecture Team  
 **Supersedes:** None  
+**Related:** PRD §60 (cost governance), §72 (cost management); TDD §44 (cost management), §50 (retention), §70 (revision preservation)  
 
 ---
 
 ## Context
 
-FINDEX stores large volumes of data across multiple layers (Raw, Bronze, Silver, Gold) with varying access patterns. Raw data is accessed infrequently but must be preserved long-term. Gold data is accessed frequently for analytical queries. Storage costs must be controlled as data volumes grow.
+KLIBRA stores multi‑year economic and market data across Raw, Bronze, Silver, and Gold layers. Access patterns vary: recent data is queried frequently; older data is accessed rarely. Storage cost must be controlled while preserving data for historical reconstruction (PRD §60, §72; TDD §44, §50).
 
 ---
 
 ## Decision
 
-FINDEX shall implement a storage tiering strategy with four tiers: Hot, Warm, Cold, and Archive. Data automatically transitions between tiers based on age and access patterns.
+Adopt a **four‑tier storage strategy** with automatic lifecycle transitions based on data age and access patterns:
+
+| Tier | Storage Class | Transition Trigger | Retention |
+| --- | --- | --- | --- |
+| **Hot** | S3 Standard | Immediate (active data) | 0–90 days |
+| **Warm** | S3 Standard‑IA (Infrequent Access) | After 90 days | 90 days–2 years |
+| **Cold** | S3 Glacier / Glacier Deep Archive | After 2 years | 2–10 years |
+| **Archive** | S3 Glacier Deep Archive (compliance) | After 10 years | Per retention policy |
+
+- **Raw layer** is exempted from aggressive tiering to preserve full source history for the longest feasible period (TDD §7, §70).
+- **Bronze, Silver, Gold** follow the tier schedule.
+- **Quarantine** retains data for a shorter period (90 days hot, then purged after investigation, per Runbook‑Quality‑Failure).
+- **Operational metadata (PostgreSQL)** uses automated RDS snapshots (30 days retention) with cross‑region backup.
 
 ---
 
 ## Alternatives Considered
 
-### Alternative A: Single Storage Tier
+- **Single storage tier (S3 Standard only)** – Rejected. Highest cost; not sustainable for long‑term retention.
+- **Manual tiering** – Rejected. Error‑prone, labour‑intensive, inconsistent.
+- **Two‑tier (Standard + Glacier)** – Rejected. Insufficient control over intermediate “warm” period.
+- **Four‑tier (selected)** – Balanced: cost‑optimised, automated, preserves access for analytical queries on recent data.
 
-All data stored in the same storage class.
+---
 
-| Aspect | Assessment |
-|---|---|
-| Pros | Simple; no tiering management |
-| Cons | High cost for cold/historical data; no cost optimization |
-| Verdict | **Rejected** |
+## Implementation Details
 
-### B: Multi-Tier Storage (Selected)
-
-Four tiers with automatic transition policies.
-
-| Aspect | Assessment |
-|---|---|
-| Pros | Cost-optimized; automated lifecycle management; appropriate for varying access patterns |
-| Cons | Requires configuration; transition latency for archive access |
-| Verdict | **Selected** |
-
-### Alternative C: Manual Tiering
-
-Manually move data between storage classes.
-
-| Aspect | Assessment |
-|---|---|
-| Pros | Full control |
-| Cons | High operational overhead; error-prone; not scalable |
-| Verdict | **Rejected** |
+- Lifecycle policies defined per layer in Terraform (`infrastructure/terraform/s3.tf`).
+- `Effective_from` / `effective_to` (ADR‑007) allow re‑hydration of cold data into warmer tiers when needed without loss.
+- Monitoring tracks data growth, tier transition counts, and estimated cost per layer (Runbook‑Monitoring‑Alerts).
+- Retention adjustments require approval per the change management process (`docs/governance/change_management_process.md`).
 
 ---
 
 ## Consequences
 
-### Positive
+**Positive:**
 
-1. **Cost efficiency** — Historical data stored in cheaper tiers automatically
-2. **Automation** — Lifecycle policies reduce manual intervention
-3. **Scalability** — Cost grows linearly with data, not exponentially
-4. **Compliance** — Retention policies enforced automatically
+- Significant cost reduction for historical data.
+- Automated lifecycle management reduces operational burden.
+- Compliance with retention policy is verifiable.
+- Raw layer protected by policy exemption ensures full source history.
 
-### Negative
+**Negative:**
 
-1. **Transition latency** — Retrieval from archive tiers has latency
-2. **Configuration complexity** — Lifecycle policies must be carefully defined
-3. **Monitoring** — Tier transitions must be monitored
-
----
-
-## Tier Definitions
-
-| Tier | Storage Class | Transition | Retention |
-|---|---|---|---|
-| **Hot** | Standard | Immediate | 0–90 days |
-| **Warm** | Infrequent Access | After 90 days | 90 days–2 years |
-| **Cold** | Glacier/Archive | After 2 years | 2–10 years |
-| **Archive** | Deep Archive | After 10 years | Per retention policy |
+- Retrieval latency for cold data (minutes to hours); acceptable for batch analytics, not for real‑time.
+- Requires monitoring of transition success to detect mis‑configurations.
 
 ---
 
-## Related Decisions
+## Definition of Done
 
-| ADR | Relationship |
-|---|---|
-| ADR-001 | Object storage — base storage layer |
-| ADR-007 | Temporal model — age determines tiering |
-
----
-
-## Document Version History
-
-| Version | Date | Author | Changes |
-|---|---|---|---|
-| 1.0 | 2026-09-02 | FINDEX Data Platform Engineering | Initial draft |
-
----
-
-*This ADR is classified as Internal.*
+- Lifecycle policies applied to all S3 buckets (Raw exempt, others per schedule).
+- Monitoring dashboard shows tier distribution and cost per layer.
+- Documentation updated in `docs/operations/monitoring_alerts.md` and `docs/operations/disaster_recovery.md`.
+- Review sign‑off from Data Governance and Platform Admin.

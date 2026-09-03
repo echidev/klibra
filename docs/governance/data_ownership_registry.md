@@ -1,171 +1,124 @@
-# FINDEX — Data Ownership Registry
+# KLIBRA — Data Ownership Registry
 
 **Document Type:** Data Ownership Registry  
-**Product:** FINDEX — Financial Data & Intelligence Exchange  
-**Product Class:** Enterprise Financial Intelligence Data Platform  
-**Document Status:** Draft — Subject to Team Assignment  
-**Version:** 1.0  
-**Date:** 2026-09-02  
-**Owner:** FINDEX Data Governance Team  
+**Product:** KLIBRA — Economic Intelligence Platform  
+**Product Class:** Enterprise Economic Intelligence & Data Products Platform  
+**Document Status:** Active  
+**Version:** 2.0  
+**Date:** 2026-09-03  
+**Owner:** KLIBRA Data Governance Team  
 **Classification:** Internal  
+**Related:** PRD §4, §12, §30; TDD §13, §60, §71  
 
 ---
 
 ## 1. Purpose
 
-This Data Ownership Registry is the authoritative record of all ownership assignments across the FINDEX platform. It specifies the Business Owner, Data Owner, and Technical Owner for every data product and critical dataset.
-
-This registry ensures that every dataset has a named, accountable owner — and that ownership is never implicit or ambiguous.
+This registry records ownership assignments for all KLIBRA data assets, ensuring clear accountability for data quality, lineage, and lifecycle management (PRD §30‑§33, TDD §59).
 
 ---
 
 ## 2. Ownership Model
 
-Every production dataset must have three distinct owners:
+KLIBRA follows a **Three‑Owner Model** (Data Governance Policy §3):
 
-| Role | Responsibility | Accountable For |
-|---|---|---|
-| **Business Owner** | Definition and acceptance | Business relevance and consumer satisfaction |
-| **Data Owner** | Quality and governance | Definitions, quality metrics, lineage, and governance compliance |
-| **Technical Owner** | Pipeline and reliability | Pipeline correctness, reliability, incident response, and infrastructure |
+- **Business Owner** – defines business meaning, acceptance criteria, and KPI alignment.
+- **Technical Owner** – responsible for pipeline implementation, quality enforcement, and operational health.
+- **Data Owner** – custodial owner of the source; manages source contracts, access, and updates.
 
 ---
 
-## 3. Ownership Registry
+## 3. Registry Structure
 
-### 3.1 Gold Data Products
+The registry is stored as a **YAML** file (`docs/governance/data_ownership_registry.yaml`) and version‑controlled.
 
-#### `gold_credit_growth` — Credit Growth Intelligence
-
-| Role | Name/Team | Responsibility |
-|---|---|---|
-| **Business Owner** | Credit Team Lead | Credit growth definitions, lending intelligence scope, consumer acceptance |
-| **Data Owner** | Data Governance Representative | Quality thresholds, lineage, definitions, glossary alignment |
-| **Technical Owner** | Data Engineering Lead (Credit) | Pipeline development, reliability, incident response |
-| **Target Release** | Release 1 | |
-
-#### `gold_financial_sector_monitor` — Financial Sector Monitor
-
-| Role | Name/Team | Responsibility |
-|---|---|---|
-| **Business Owner** | Finance Team Lead | Financial sector indicator definitions and scope |
-| **Data Owner** | Data Governance Representative | Quality thresholds, lineage, definitions, glossary alignment |
-| **Technical Owner** | Data Engineering Lead (Financial Sector) | Pipeline development, reliability, incident response |
-| **Target Release** | Release 1 | |
-
-#### `gold_macro_financial_context` — Macro-Financial Context
-
-| Role | Name/Team | Responsibility |
-|---|---|---|
-| **Business Owner** | Strategy Team Lead | Macro-financial context definitions and scope |
-| **Data Owner** | Data Governance Representative | Quality thresholds, lineage, definitions, glossary alignment |
-| **Technical Owner** | Data Engineering Lead (Macro) | Pipeline development, reliability, incident response |
-| **Target Release** | Release 1 | |
-
-#### `gold_regional_financial_profile` — Regional Financial Profile
-
-| Role | Name/Team | Responsibility |
-|---|---|---|
-| **Business Owner** | Regional Analysis Team Lead | Regional financial indicator definitions and scope |
-| **Data Owner** | Data Governance Representative | Quality thresholds, lineage, definitions, glossary alignment |
-| **Technical Owner** | Data Engineering Lead (Regional) | Pipeline development, reliability, incident response |
-| **Target Release** | Release 2 | |
-
-### 3.2 Silver Datasets
-
-| Dataset ID | Business Owner | Data Owner | Technical Owner | Source |
-|---|---|---|---|---|
-| `ojk_banking_stats` | Credit Team Lead | Data Governance Representative | Data Engineering Lead (Credit) | OJK |
-| `ojk_islamic_banking` | Finance Team Lead | Data Governance Representative | Data Engineering Lead (Financial Sector) | OJK |
-| `ojk_capital_markets` | Strategy Team Lead | Data Governance Representative | Data Engineering Lead (Macro) | OJK |
-| `bi_monetary_stats` | Strategy Team Lead | Data Governance Representative | Data Engineering Lead (Macro) | Bank Indonesia |
-| `bi_exchange_rates` | Risk Management Lead | Data Governance Representative | Data Engineering Lead (Macro) | Bank Indonesia |
-| `bi_interest_rates` | Credit Team Lead | Data Governance Representative | Data Engineering Lead (Macro) | Bank Indonesia |
-| `bi_inflation` | Strategy Team Lead | Data Governance Representative | Data Engineering Lead (Macro) | Bank Indonesia |
-| `bi_fx_reserves` | Finance Team Lead | Data Governance Representative | Data Engineering Lead (Macro) | Bank Indonesia |
-| `bps_gdp` | Strategy Team Lead | Data Governance Representative | Data Engineering Lead (Macro) | BPS |
-| `bps_trade_balance` | Strategy Team Lead | Data Governance Representative | Data Engineering Lead (Macro) | BPS |
-| `bps_prices` | Strategy Team Lead | Data Governance Representative | Data Engineering Lead (Macro) | BPS |
-| `bps_labor` | Strategy Team Lead | Data Governance Representative | Data Engineering Lead (Macro) | BPS |
-| `bps_poverty` | Regional Analysis Team Lead | Data Governance Representative | Data Engineering Lead (Regional) | BPS |
-| `bps_demographics` | Regional Analysis Team Lead | Data Governance Representative | Data Engineering Lead (Regional) | BPS |
-
-### 3.3 Bronze and Raw Layers
-
-Bronze and Raw layers inherit ownership from their corresponding Silver and source datasets respectively. No separate ownership assignment is required — ownership flows upward from the dataset.
-
-### 3.4 Platform-Level Assets
-
-| Asset | Business Owner | Data Owner | Technical Owner |
-|---|---|---|---|
-| Source Catalog | Data Governance Lead | Data Governance Lead | Data Engineering Lead |
-| Data Dictionary | Data Governance Lead | Data Governance Lead | Data Engineering Lead |
-| Data Contracts | Data Governance Lead | Data Governance Lead | Data Engineering Lead |
-| Metadata System | Data Governance Lead | Data Governance Lead | Data Engineering Lead |
-| Quality Framework | Data Governance Lead | Data Governance Lead | Data Engineering Lead |
-| Lineage System | Data Governance Lead | Data Governance Lead | Data Engineering Lead |
-
----
-
-## 4. Ownership Contact Information
-
-> Note: Specific individual names, emails, and contact details are maintained in the internal team directory and are not published in this registry. Contact mappings are managed by the Platform Admin.
-
----
-
-## 5. Ownership Assignment Rules
-
-1. Every production dataset must have all three roles assigned before reaching production readiness.
-2. Business Owner, Data Owner, and Technical Owner must be different individuals or distinct team roles.
-3. Ownership assignments are recorded in this registry and in each dataset's Data Contract.
-4. Changes to ownership are documented with date, reason, and approval.
-5. Ownership is reviewed quarterly during the governance review cycle.
-6. When a team member leaves, ownership is reassigned within 5 business days.
-
----
-
-## 6. Ownership Change Log
-
-| Date | Dataset/Asset | Role | Previous Owner | New Owner | Reason | Approved By |
-|---|---|---|---|---|---|---|
-| — | — | — | — | — | Initial assignment — all owners to be confirmed upon team formation | — |
-
----
-
-## 7. Escalation Path
-
-When ownership conflicts or gaps arise:
-
-```text
-Dataset Owner Dispute
-  ↓
-Data Governance Review
-  ↓
-Unresolved → Data Governance Lead escalation
-  ↓
-Unresolved → Executive Management escalation
+```yaml
+datasets:
+  gold_macro_indicators:
+    business_owner: finance-analytics-team
+    technical_owner: data-engineering-team
+    data_owner: world-bank
+    description: Standardized macro‑economic indicators (GDP, inflation, etc.)
+    last_updated: 2026-09-02
+  gold_interest_rate_monitor:
+    business_owner: risk-management-team
+    technical_owner: data-engineering-team
+    data_owner: fred
+    description: Central bank policy rates and benchmark yields
+    last_updated: 2026-09-02
+  gold_market_overview:
+    business_owner: market-insights-team
+    technical_owner: data-engineering-team
+    data_owner: coin-gecko
+    description: FX, equity, commodity, crypto market observations
+    last_updated: 2026-09-02
+  gold_country_benchmark:
+    business_owner: strategy-team
+    technical_owner: data-engineering-team
+    data_owner: world-bank
+    description: Cross‑country macro benchmarks
+    last_updated: 2026-09-02
+  gold_source_health:
+    business_owner: data-ops-team
+    technical_owner: data-engineering-team
+    data_owner: platform
+    description: Operational health metrics for each source
+    last_updated: 2026-09-02
+semantic_metrics:
+  gdp_growth_rate:
+    business_owner: finance-analytics-team
+    technical_owner: data-engineering-team
+    data_owner: world-bank
+    description: Annual GDP growth rate per country
+    version: 1.0.0
+    last_updated: 2026-09-02
+  inflation_rate:
+    business_owner: finance-analytics-team
+    technical_owner: data-engineering-team
+    data_owner: world-bank
+    description: Consumer price index inflation rate
+    version: 1.0.0
+    last_updated: 2026-09-02
+# ...additional metrics and intelligence products follow same pattern...
 ```
 
 ---
 
-## 8. Document Version History
+## 4. Maintenance Process
+
+1. **New Asset Creation** – When a new dataset, metric, or intelligence product is added, the owning team updates the registry via a pull request.
+2. **Owner Change** – Any change to ownership triggers a **Major change** in the Change Management Process (ADR‑002).
+3. **Periodic Review** – Quarterly review by Data Governance Committee to verify owners remain appropriate.
+4. **Audit Trail** – All changes tracked in Git commit history; an audit log exported monthly for compliance.
+
+---
+
+## 5. Ownership Responsibilities
+
+| Owner | Responsibilities |
+| --- | --- |
+| **Business Owner** | Define business definition, acceptance criteria, usage guidance; sign off on release of Gold products and semantic metrics. |
+| **Technical Owner** | Ensure pipelines produce outputs meeting contracts; monitor quality; maintain CI/CD; manage backfills. |
+| **Data Owner** | Maintain source contract, monitor source availability, manage credentials, update source catalog. |
+
+---
+
+## 6. Governance Integration
+
+- **Access Review Process** uses this registry to populate the `owner` field in the access matrix.
+- **Change Management Process** requires owner sign‑off for any change affecting the asset.
+- **Data Quality Governance** monitors quality metrics per owner responsibility.
+- **Incident Management** includes owner fields for impact analysis.
+
+---
+
+## 7. Document Version History
 
 | Version | Date | Author | Changes |
-|---|---|---|---|
-| 1.0 | 2026-09-02 | FINDEX Data Governance Team | Initial draft — ownership assignments for all Gold products, Silver datasets, and platform-level assets |
+| --- | --- | --- | --- |
+| 1.0 | 2026-09-02 | FINDEX Data Governance Team | Initial draft (FINDEX) |
+| 2.0 | 2026-09-03 | KLIBRA Data Governance Team | Re‑aligned to KLIBRA PRD v2.0 / TDD v2.0; updated asset list, owners, and structure |
 
 ---
 
-## 9. Document Status
-
-This Data Ownership Registry is a draft artifact. Specific individual assignments are subject to team formation. The role assignments and dataset-to-owner mappings are the authoritative structure pending individual confirmation.
-
-This document is a companion to:
-- **Data Governance Policy** (`docs/governance/data_governance_policy.md`)
-- **Data Contracts** (`docs/data/contracts/data_contracts.md`)
-- **PRD** — ownership referenced in stakeholder and data product sections
-- **TDD** — ownership referenced in engineering operating model
-
----
-
-*This document is classified as Internal. Distribution is restricted to authorized FINDEX team members and stakeholders.*
+*This document is classified as Internal. Distribution is restricted to authorized KLIBRA team members and stakeholders.*

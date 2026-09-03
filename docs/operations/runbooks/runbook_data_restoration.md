@@ -1,123 +1,119 @@
 # Runbook — Data Restoration
 
 **Document Type:** Operational Runbook  
-**Product:** FINDEX  
-**Status:** Draft  
-**Version:** 1.0  
-**Date:** 2026-09-02  
-**Owner:** Data Engineering Team  
+**Product:** KLIBRA  
+**Status:** Active  
+**Version:** 2.0  
+**Date:** 2026-09-03  
+**Owner:** KLIBRA Data Platform Engineering  
 **Classification:** Internal  
+**Related:** PRD §74 (DR strategy); TDD §45 (backup/restore), §82 (replay sequence)  
 
 ---
 
 ## 1. Purpose
 
-This runbook provides procedures for restoring data in the FINDEX platform following data loss, corruption, or disaster events.
+Provide step‑by‑step procedures for restoring data after loss, corruption, or disaster in KLIBRA (TDD §45, §82).
 
 ---
 
 ## 2. Detection
 
-- Data loss detected through monitoring or audit
-- Data corruption identified through quality checks
-- Storage failure or data integrity issue
-- Disaster event affecting production infrastructure
-- Ingestion pipeline produces incorrect data that was published
+- Monitoring alert for **data loss** (record count drop, missing partitions).
+- **Data corruption** flagged by quality‑gate failures.
+- **Storage layer** error (S3 access failure, PostgreSQL outage).
+- **Pipeline failure** log indicating incomplete ingestion.
+- **Downstream consumer** report of missing or stale data.
 
 ---
 
-## 3. Principles
+## 3. Containment
 
-1. **Raw data is immutable** — source payloads in Raw layer are preserved and serve as the ultimate source of truth.
-2. **Infrastructure is reproducible** — Terraform-defined infrastructure can be recreated.
-3. **Transformations are versioned** — transformation code is tracked in version control.
-4. **Metadata is recoverable** — operational metadata is stored in PostgreSQL with backups.
-
----
-
-## 4. Procedure
-
-### 4.1 Assessment
-
-1. Identify the scope of data loss or corruption
-2. Determine affected layers (Raw, Bronze, Silver, Gold)
-3. Identify affected time periods
-4. Assess whether source data in Raw layer is intact
-5. Determine RPO (Recovery Point Objective) and RTO (Recovery Time Objective)
-
-### 4.2 Restoration from Raw Data
-
-If Raw layer data is intact:
-
-1. Verify Raw data integrity using content hashes
-2. Re-run Bronze transformation on verified Raw data
-3. Re-run Silver transformation on verified Bronze data
-4. Re-run Gold transformation on verified Silver data
-5. Validate each layer before proceeding to next
-6. Publish corrected data to production
-
-### 4.3 Full Infrastructure Restoration
-
-If infrastructure is affected:
-
-1. Deploy infrastructure from Terraform definitions
-2. Restore PostgreSQL metadata from backup
-3. Restore object storage from backup or cross-region replication
-4. Re-deploy pipeline code from version control
-5. Re-run pipeline for affected periods
-6. Validate all layers
-
-### 4.4 Point-in-Time Recovery
-
-If point-in-time recovery is needed:
-
-1. Identify the target point-in-time timestamp
-2. Use effective_from/effective_to to reconstruct state at that point
-3. Validate reconstructed data
-4. Publish reconstructed data if required
+1. Halt further ingestion for affected dataset.
+2. Identify the scope of data loss:
+   - Which layers affected (Raw, Bronze, Silver, Gold)?
+   - Which time periods / partitions affected?
+   - Is the loss complete or partial?
+3. Alert **Platform Admin** and **Technical Owner**.
+4. Document the event in incident management.
 
 ---
 
-## 5. Validation
+## 4. Pre‑Restoration Checks
 
-1. Verify data integrity using content hashes
-2. Run all quality checks
-3. Verify record counts match historical baselines
-4. Run reconciliation against source totals
-5. Verify lineage is intact
-6. Confirm downstream data products are correct
-7. Validate freshness and temporal continuity
-
----
-
-## 6. Communication
-
-- Alert Technical Owner and Data Owner immediately
-- Notify Business Owner for P0/P1 events
-- Notify downstream consumers if published data is affected
-- Document all restoration steps and results
-- Provide recovery timeline to stakeholders
-- Conduct post-incident review
+| Check | Action |
+| --- | --- |
+| **Raw integrity** | Verify whether raw data exists in S3 (content hashes). |
+| **Replica availability** | Check replica availability (cross‑region S3 replication). |
+| **Backup availability** | Check PostgreSQL backup and Terraform state backup. |
+| **Code version** | Confirm pipeline code version that produced the missing data. |
+| **Lineage records** | Inspect `metadata/` for lineage to understand the data flow. |
 
 ---
 
-## 7. Prevention
+## 5. Restoration Paths
 
-1. Maintain regular backups of PostgreSQL and object storage
-2. Implement cross-region replication for critical data
-3. Test restoration procedures regularly
-4. Define and document RPO/RTO per service/data product
-5. Monitor data integrity continuously
-6. Maintain immutable raw data as ultimate backup
+### Path A — Raw Exists (most common)
+
+1. Verify raw data integrity via content hash.
+2. Re‑run **Bronze** transformation from raw.
+3. Re‑run **Silver** transformation from Bronze.
+4. Re‑run **Gold** transformation from Silver.
+5. Validate each layer before proceeding.
+6. Publish to production with correct `effective_from`/`effective_to` (ADR‑007).
+7. Record restoration run in metadata.
+
+### Path B — Raw Missing or Corrupted
+
+1. Restore raw from **cross‑region S3 replica** (if available).
+2. If not available, re‑fetch from source API using the backfill procedure (Runbook‑Backfill).
+3. Follow Path A.
+
+### Path C — Metadata / PostgreSQL Corrupted
+
+1. Restore PostgreSQL from **latest backup** (see Disaster Recovery doc).
+2. Re‑run lineage reconstruction if needed.
+3. Validate metadata against raw counts.
+4. Resume normal operations.
 
 ---
 
-## 8. Document Version History
+## 6. Validation
+
+1. Verify **record count** matches pre‑loss baseline (or backfill spec).
+2. Run **quality checks** (P0/P1) – must pass.
+3. Verify **lineage** is intact (OpenMetadata).
+4. Spot‑check downstream **Gold data products** for correctness.
+5. Monitor **freshness** SLA post‑restoration.
+6. Record restoration outcome in incident ticket.
+
+---
+
+## 7. Communication
+
+- Inform **Data Owner** and **Business Consumer** of the restoration outcome.
+- Provide **timeline** of data restoration.
+- Notify **downstream consumers** when corrected data is published.
+- Update **incident ticket** with restoration details.
+
+---
+
+## 8. Post‑Restoration
+
+1. Document lessons learned.
+2. Update **disaster recovery** runbook if gaps found.
+3. Review **backup schedule** and improve if needed.
+4. Conduct **blameless post‑mortem** for major incidents (TDD §46).
+
+---
+
+## 9. Document Version History
 
 | Version | Date | Author | Changes |
-|---|---|---|---|
-| 1.0 | 2026-09-02 | FINDEX Data Engineering | Initial draft |
+| --- | --- | --- | --- |
+| 1.0 | 2026-09-02 | FINDEX Data Engineering | Initial draft (FINDEX) |
+| 2.0 | 2026-09-03 | KLIBRA Data Platform Engineering | Updated for KLIBRA PRD v2.0 / TDD v2.0; added restoration paths, validation checks, and communication steps |
 
 ---
 
-*This document is classified as Internal.*
+*This document is classified as Internal. Distribution is restricted to authorized KLIBRA team members and stakeholders.*

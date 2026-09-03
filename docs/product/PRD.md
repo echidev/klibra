@@ -1,25 +1,25 @@
-# FINDEX — Product Requirements Document
+# KLIBRA — Product Requirements Document
 
 **Document Type:** Product Requirements Document (PRD)  
-**Product:** FINDEX — Financial Data & Intelligence Exchange  
-**Product Class:** Enterprise Financial Intelligence Data Platform  
-**Document Status:** Draft for Requirements Baseline  
-**Version:** 1.0  
-**Date:** 2026-09-02  
-**Owner:** FINDEX Product & Data Platform Team  
-**Classification:** Internal
+**Product:** KLIBRA — Economic Intelligence Platform  
+**Product Class:** Enterprise Economic Intelligence & Data Products Platform  
+**Document Status:** Requirements Baseline  
+**Version:** 2.0  
+**Date:** 2026-09-03  
+**Owner:** KLIBRA Product & Data Platform Team  
+**Classification:** Internal  
 
 ---
 
 ## 1. Executive Summary
 
-FINDEX is an enterprise financial intelligence data platform designed to provide trusted, governed, and reusable financial and macroeconomic data products to business and analytical functions.
+KLIBRA is an enterprise-grade economic intelligence platform designed to provide trusted, governed, and reusable financial and macroeconomic data products to business and analytical functions.
 
 The platform consolidates approved public and institutional data sources, preserves source-level history, standardizes heterogeneous datasets, applies measurable data-quality controls, and exposes curated data products for downstream consumption.
 
-FINDEX is intended to operate as a shared data capability rather than as a single dashboard or one-off analytical pipeline.
+KLIBRA is intended to operate as a shared data capability and governed intelligence platform rather than as a single dashboard or one-off analytical pipeline.
 
-The initial domain is Indonesia's financial ecosystem, with emphasis on data relevant to:
+The initial domain is the global economic and financial ecosystem, with emphasis on data relevant to:
 
 - Credit and lending intelligence
 - Financial-sector monitoring
@@ -35,7 +35,7 @@ The platform must allow downstream users to consume trusted data without having 
 
 > **Make trusted financial intelligence available as a reusable enterprise data product.**
 
-FINDEX will establish a governed data foundation between external data providers and internal consumers.
+KLIBRA will establish a governed data foundation between external data providers and internal consumers.
 
 The platform should progressively become a reliable source of standardized financial intelligence for analytical and decision-support workloads.
 
@@ -43,44 +43,44 @@ The platform should progressively become a reliable source of standardized finan
 
 # 3. Business Problem
 
-Financial and economic information is commonly distributed across multiple institutional sources.
+Economic and financial intelligence is distributed across independent public providers. Each provider uses different schemas, identifiers, frequencies, metadata conventions, revision semantics, and access patterns.
 
-These sources may differ in:
+KLIBRA addresses the engineering problem of turning those fragmented observations into trusted, reusable, decision-ready intelligence.
 
-- Data structures
-- Definitions and classifications
-- Geographic hierarchies
-- Reporting periods
-- Publication schedules
-- Historical coverage
-- File and API formats
-- Revision behavior
-- Naming conventions
-- Granularity
-- Data-quality characteristics
+Common challenges include:
 
-Without a centralized data capability, analytical teams repeatedly perform source discovery, extraction, cleaning, joining, and validation.
+- Different country and regional identifiers.
+- Different indicator definitions and units.
+- Monthly, quarterly, annual, daily, and irregular frequencies.
+- Publication and observation dates that are not equivalent.
+- Historical revisions and restatements.
+- API rate limits and pagination.
+- Schema drift and provider-specific error semantics.
+- Market data with different freshness entitlements.
+- Lack of shared business definitions across consumers.
 
-This creates several enterprise risks:
+Without a unified platform, every analytical consumer repeatedly performs source discovery, extraction, cleaning, joins, validation, and metric calculation.
 
-1. Duplicate analytical work
-2. Inconsistent business definitions
-3. Poor historical reproducibility
-4. Weak source traceability
-5. Hidden data-quality issues
-6. Fragile analytical pipelines
-7. Delayed decision-making
-8. Dependence on individual analysts' source knowledge
+This produces several risks:
 
-FINDEX addresses this problem by centralizing data engineering responsibilities and delivering governed data products.
+1. Duplicate engineering effort.
+2. Conflicting definitions of the same metric.
+3. Loss of source-level traceability.
+4. Silent propagation of bad data.
+5. Non-reproducible analytical results.
+6. Fragile pipelines coupled directly to upstream APIs.
+7. Poor handling of revisions and late-arriving data.
+8. Limited visibility into pipeline and dataset health.
+9. Excessive cloud and API consumption.
+10. Dependency on undocumented analyst knowledge.
 
----
+KLIBRA addresses these risks through governed ingestion, layered storage, formal data contracts, semantic metrics, intelligence products, lineage, observability, and reproducible delivery.
 
 # 4. Product Objectives
 
 ## 4.1 Primary Objectives
 
-FINDEX shall:
+KLIBRA shall:
 
 1. Centralize approved financial and economic data sources.
 2. Preserve source data and ingestion history.
@@ -97,7 +97,7 @@ FINDEX shall:
 
 ## 4.2 Secondary Objectives
 
-FINDEX should:
+KLIBRA should:
 
 - Support historical backfills.
 - Support data revisions.
@@ -111,7 +111,7 @@ FINDEX should:
 
 # 5. Non-Goals
 
-FINDEX is not initially intended to:
+KLIBRA is not initially intended to:
 
 - Replace source institutions' systems of record.
 - Become a transaction-processing system.
@@ -127,7 +127,7 @@ FINDEX is not initially intended to:
 
 # 6. Product Principles
 
-FINDEX shall follow these principles:
+KLIBRA shall follow these principles:
 
 ### 6.1 Source Fidelity
 
@@ -170,7 +170,7 @@ Technology must be selected to satisfy requirements. Tools shall not be introduc
 # 7. Stakeholders
 
 | Stakeholder | Responsibility / Need |
-|---|---|
+| --- | --- |
 | Executive Management | Strategic financial intelligence |
 | Risk Management | Risk indicators and financial conditions |
 | Credit Team | Credit growth and lending intelligence |
@@ -211,124 +211,222 @@ Require ownership, definitions, quality metrics, lineage, and change visibility.
 
 # 9. Primary Business Use Cases
 
-## UC-01 — Credit Growth Intelligence
+## UC-01 — Global Macro Monitoring
 
-Analyze changes in lending and credit indicators over time.
-
-Questions include:
-
-- How is credit growing?
-- Which sectors or regions are changing?
-- Where are significant increases or decreases occurring?
-- How does credit behavior relate to macroeconomic conditions?
-
-## UC-02 — Financial Sector Monitoring
-
-Monitor the condition and evolution of Indonesian financial-sector indicators.
+Monitor the evolution of GDP, inflation, unemployment, population, productivity, and related macroeconomic indicators across countries and regions.
 
 Questions include:
 
-- How are financial-sector aggregates changing?
-- Which segments are expanding or contracting?
-- Are there notable structural shifts?
+- Which economies are accelerating or decelerating?
+- Where is inflation rising or easing?
+- Which indicators have changed materially since the previous publication?
 
-## UC-03 — Macro-Financial Context
+## UC-02 — Monetary & Interest Rate Intelligence
 
-Combine financial-sector indicators with macroeconomic indicators.
-
-Questions include:
-
-- What macroeconomic environment surrounds a credit trend?
-- Are financial indicators moving consistently with broader economic conditions?
-
-## UC-04 — Regional Financial Intelligence
-
-Compare financial indicators across geographic levels.
+Monitor policy rates, benchmark rates, yield-related series, and other monetary indicators across major economies.
 
 Questions include:
 
-- Which regions show material changes?
-- How do financial indicators differ geographically?
-- Which regions warrant deeper investigation?
+- Which central-bank regimes are tightening or easing?
+- Where are rate differentials widening?
+- What is the historical context for current policy conditions?
 
-## UC-05 — Historical Reconstruction
+## UC-03 — Cross-Source Macro Reconciliation
 
-Allow analysts to reproduce a historical analytical view using data available at a defined point in time when source and publication history permit.
+Compare compatible economic indicators across public providers while preserving provider-specific definitions.
 
----
+Questions include:
+
+- Do two providers report comparable values?
+- Are differences caused by definition, revision, frequency, or timing?
+- Which source should be treated as authoritative for a given metric?
+
+## UC-04 — Country & Regional Benchmarking
+
+Compare economies using a standardized canonical model.
+
+Questions include:
+
+- How does Indonesia compare with ASEAN peers?
+- How do emerging markets compare with developed economies?
+- Which countries show the largest deterioration or improvement in a metric basket?
+
+## UC-05 — Market Condition Monitoring
+
+Combine public market and macro indicators to monitor market conditions.
+
+Questions include:
+
+- Is market volatility increasing?
+- Are foreign-exchange conditions changing materially?
+- Are market signals consistent with the prevailing macro environment?
+
+## UC-06 — Historical Reconstruction
+
+Reconstruct what KLIBRA knew at a defined point in time when source version history and acquisition metadata permit.
+
+## UC-07 — Intelligence Metric Consumption
+
+Provide governed business metrics through a semantic layer so dashboards, notebooks, APIs, and downstream models use consistent definitions.
+
+## UC-08 — Data Reliability Investigation
+
+Allow engineers and analysts to trace an anomalous metric back from intelligence output to Gold, Silver, Bronze, Raw, source request, and source payload metadata.
 
 # 10. Product Scope
 
 ## 10.1 Initial Scope
 
-The first release shall focus on selected authoritative Indonesian data sources, prioritized by business relevance and technical feasibility.
+Release 1 focuses on globally accessible public APIs and public data services that a personal developer can access without institutional sponsorship or a provider-specific proposal process.
 
-Potential source institutions include:
+Initial source families:
 
-- Otoritas Jasa Keuangan (OJK)
-- Bank Indonesia (BI)
-- Badan Pusat Statistik (BPS)
-- Other official government sources where justified
+- World Bank Indicators API.
+- IMF Data APIs / SDMX services.
+- FRED Web Services.
+- ECB Data Portal Web Services.
+- Alpha Vantage APIs.
+- CoinGecko Demo API.
 
-The final source list is subject to source-level feasibility validation.
+Access classes are documented explicitly in the Source Catalog:
+
+| Access Class | Meaning |
+| --- | --- |
+| A | Public API with no credential required for baseline access |
+| B | Public self-service API requiring a personal/free API key or account |
+| C | Public statistical API with account/portal tooling considerations but no institutional proposal |
+
+KLIBRA excludes sources that require institutional sponsorship, bespoke commercial agreements, private credentials, or proposal-based access for Release 1.
 
 ## 10.2 Source Selection Criteria
 
 Sources shall be evaluated using:
 
-- Authority
-- Business relevance
-- Historical availability
-- Update frequency
-- Accessibility
-- Structural stability
-- Licensing/usage terms
-- Documentation quality
-- Granularity
-- Technical reliability
+- Authority.
+- Public accessibility.
+- Self-service onboarding.
+- Business relevance.
+- Historical coverage.
+- Update frequency.
+- Structural stability.
+- Licensing/usage terms.
+- Documentation quality.
+- Granularity.
+- Technical reliability.
+- Rate-limit feasibility.
+- Revision transparency.
+- Metadata quality.
 
----
+## 10.3 Geographic Scope
+
+The platform is global by design and should support country, region, income group, and provider-specific geographic hierarchies where available.
+
+## 10.4 Exclusions
+
+KLIBRA will not depend on a provider whose normal personal access requires an institutional proposal, privileged network, contractual data feed, or private institutional authentication.
 
 # 11. Data Product Strategy
 
-FINDEX will organize data into reusable products rather than exposing raw source structures directly.
+KLIBRA will organize data into reusable products rather than exposing raw provider structures directly.
 
-Initial products:
+## 11.1 Core Data Products
 
-### 11.1 Credit Intelligence
+### 11.1.1 Macro Indicators
 
-Curated credit and lending indicators.
+Standardized observations for GDP, inflation, unemployment, population, productivity, and other macroeconomic series.
 
-### 11.2 Financial Sector Monitor
+Target model: `gold_macro_indicators`
 
-Standardized financial-sector indicators.
+### 11.1.2 Monetary & Interest Rate Monitor
 
-### 11.3 Macro-Financial Context
+Standardized rates and monetary indicators with explicit observation and publication semantics.
 
-Financial indicators combined with relevant macroeconomic indicators.
+Target model: `gold_interest_rate_monitor`
 
-### 11.4 Regional Financial Profile
+### 11.1.3 Market Overview
 
-Geographically standardized financial indicators.
+Selected FX, equity, commodity, and crypto market observations where licensing and access limits permit.
 
-Each data product must have:
+Target model: `gold_market_overview`
 
-- Business definition
-- Scope
-- Data owner
-- Refresh expectation
-- Quality expectations
-- Known limitations
-- Data lineage
-- Consumer guidance
+### 11.1.4 Country Benchmark
 
----
+Cross-country comparison-ready data product aligned to common dimensions.
+
+Target model: `gold_country_benchmark`
+
+### 11.1.5 Source Reliability Monitor
+
+Operational product describing freshness, row counts, schema changes, failure rates, and source health.
+
+Target model: `gold_source_health`
+
+## 11.2 Semantic Metrics
+
+The semantic layer shall define reusable business metrics such as:
+
+- GDP growth rate.
+- Inflation rate.
+- Unemployment rate.
+- Policy rate.
+- Real policy rate where inputs are compatible.
+- FX return.
+- Market volatility.
+- Debt-to-GDP where compatible.
+- Economic momentum score.
+- Inflation pressure score.
+- Market stress score.
+
+Every governed metric must specify:
+
+- Business definition.
+- Grain.
+- Dimensions.
+- Formula.
+- Source eligibility.
+- Unit.
+- Temporal semantics.
+- Null/edge-case behavior.
+- Owner.
+- Version.
+- Quality expectations.
+- Lineage.
+
+## 11.3 Intelligence Products
+
+KLIBRA may derive composite indicators only where component definitions are sufficiently compatible and the methodology is explicitly documented.
+
+Initial intelligence products:
+
+1. `intelligence_economic_momentum`.
+2. `intelligence_inflation_pressure`.
+3. `intelligence_market_stress`.
+4. `intelligence_country_risk`.
+5. `intelligence_global_liquidity`.
+
+Composite metrics are analytical products, not authoritative source facts. Their methodology and limitations must be visible to consumers.
+
+## 11.4 Product Requirements
+
+Every data or intelligence product must have:
+
+- Business definition.
+- Product owner.
+- Technical owner.
+- Source lineage.
+- Refresh expectation.
+- Quality thresholds.
+- Semantic definition.
+- Known limitations.
+- Versioning policy.
+- Consumer guidance.
+- Deprecation policy where applicable.
 
 # 12. Functional Requirements
 
 ## FR-01 Source Registration
 
-The platform shall maintain a registry of approved data sources.
+The platform shall maintain a registry of approved public data sources, source access class, credentials policy, legal constraints, rate-limit expectations, and tested endpoints.
 
 Each source should have:
 
@@ -346,10 +444,10 @@ Each source should have:
 
 The platform shall ingest approved data through the most appropriate supported mechanism, prioritizing:
 
-1. Official structured APIs
+1. Official structured APIs / SDMX services
 2. Official downloadable structured datasets
-3. Official portal datasets
-4. Official web sources where necessary
+3. Official public data catalog services
+4. Official web sources only where necessary and permitted
 
 ## FR-03 Raw Preservation
 
@@ -407,7 +505,7 @@ The platform shall support controlled retry, rerun, and backfill operations.
 
 # 13. Data Quality Requirements
 
-FINDEX shall evaluate, where applicable:
+KLIBRA shall evaluate, where applicable:
 
 - Completeness
 - Uniqueness
@@ -431,7 +529,7 @@ Quality thresholds shall be defined per dataset rather than applying one univers
 
 # 14. Temporal Requirements
 
-FINDEX shall distinguish, where available:
+KLIBRA shall distinguish, where available:
 
 - Observation period
 - Publication date/time
@@ -468,7 +566,7 @@ The platform should preserve sufficient operational metadata to answer:
 
 # 16. Security & Governance Requirements
 
-FINDEX shall implement:
+KLIBRA shall implement:
 
 - Least-privilege access
 - Environment separation
@@ -577,7 +675,7 @@ Expand cross-domain products and analytical serving.
 
 # 20. Acceptance Criteria
 
-FINDEX is considered ready for production use when:
+KLIBRA is considered ready for production use when:
 
 1. Approved sources are registered.
 2. Source access mechanisms are documented.
@@ -660,9 +758,9 @@ When requirements conflict, decisions should prioritize:
 
 # 25. Final Product Definition
 
-FINDEX is a governed enterprise data platform that transforms heterogeneous authoritative financial and economic information into trusted, reusable financial intelligence data products.
+KLIBRA is a governed enterprise data platform that transforms heterogeneous authoritative financial and economic information into trusted, reusable financial intelligence data products.
 
-FINDEX is successful when downstream teams can answer important financial and risk questions without repeatedly solving the same source-ingestion, standardization, quality, historical, and lineage problems.
+KLIBRA is successful when downstream teams can answer important financial and risk questions without repeatedly solving the same source-ingestion, standardization, quality, historical, and lineage problems.
 
 ---
 
@@ -681,3 +779,384 @@ The next formal artifacts are:
 5. Architecture Decision Records
 
 Technical decisions shall be based on validated source characteristics and approved requirements.
+
+# 27. Semantic Layer Requirements
+
+## 27.1 Purpose
+
+The semantic layer is the governed contract between Gold data products and analytical consumers.
+
+It shall prevent consumers from redefining core metrics independently.
+
+## 27.2 Metric Definition Requirements
+
+Each semantic metric shall include:
+
+- Metric identifier.
+- Display name.
+- Description.
+- Grain.
+- Dimensions.
+- Measures.
+- Formula.
+- Unit.
+- Source eligibility.
+- Time aggregation behavior.
+- Null behavior.
+- Filtering semantics.
+- Version.
+- Owner.
+- Data quality status.
+- Effective date.
+- Deprecation status.
+
+## 27.3 Metric Governance
+
+Changes to a metric formula or meaning are semantic breaking changes unless explicitly versioned and approved.
+
+A metric must not be silently redefined while retaining the same major version.
+
+## 27.4 Semantic Consumption
+
+The semantic layer must support, where practical:
+
+- BI dashboards.
+- SQL analytics.
+- Notebooks.
+- Programmatic API consumers.
+- Data science feature generation.
+
+# 28. Intelligence Layer Requirements
+
+## 28.1 Intelligence Methodology
+
+Composite intelligence metrics must be deterministic from versioned inputs and configuration.
+
+## 28.2 Standardization Before Aggregation
+
+Component series shall be normalized before combination when units or scales differ.
+
+## 28.3 Weighting
+
+Weights must be explicit and version controlled.
+
+Default methodology shall prefer transparent deterministic weighting over opaque model outputs.
+
+## 28.4 Confidence
+
+Composite intelligence products should expose a confidence or coverage indicator describing whether all expected component inputs were available and valid.
+
+## 28.5 Explainability
+
+Consumers must be able to inspect component metrics contributing to an intelligence score.
+
+# 29. Data Contracts
+
+Every production source and internal product shall have a version-controlled contract.
+
+Minimum contract sections:
+
+- Dataset identity.
+- Owner.
+- Description.
+- Source.
+- Access class.
+- Schema.
+- Primary/business keys.
+- Units.
+- Enumerations.
+- Temporal semantics.
+- Freshness expectation.
+- Quality thresholds.
+- Versioning policy.
+- Compatibility policy.
+- Known limitations.
+
+Contracts shall distinguish source contract from internal product contract.
+
+# 30. Metadata & Data Catalog Requirements
+
+KLIBRA shall provide searchable metadata for:
+
+- Sources.
+- Datasets.
+- Tables.
+- Columns.
+- Metrics.
+- Pipelines.
+- Owners.
+- Quality checks.
+- Lineage.
+- Incidents.
+
+OpenMetadata or an equivalent catalog is a target platform component subject to ADR approval.
+
+# 31. Source Accessibility Governance
+
+The Source Catalog shall be a production artifact rather than informal documentation.
+
+Each source record must state:
+
+- Provider.
+- Endpoint.
+- Dataset.
+- Access class.
+- Authentication model.
+- Registration steps.
+- Rate limits where known.
+- Terms/usage constraints.
+- Historical coverage.
+- Update cadence.
+- Revision behavior.
+- Contract stability.
+- Last verified date.
+- Fallback strategy.
+
+A source shall not be promoted to Release 1 solely because documentation exists. A live request must succeed in the project environment.
+
+# 32. Product Quality SLOs
+
+Initial platform targets are indicative and may be tightened after workload measurement.
+
+## 32.1 Freshness SLO
+
+Scheduled datasets should meet their declared freshness windows at least 99% of scheduled runs after excluding documented provider outages.
+
+## 32.2 Pipeline Reliability
+
+Production pipelines should achieve at least 99% successful scheduled executions excluding upstream provider outages that are correctly detected and classified.
+
+## 32.3 Data Quality
+
+Blocking quality rules must have zero unresolved P0 conditions at publication time.
+
+## 32.4 Lineage Coverage
+
+100% of production Gold products and semantic metrics must have dataset-level lineage.
+
+Critical semantic metrics should have field-level lineage where technically feasible.
+
+# 33. Security & Privacy Requirements
+
+KLIBRA is designed for public/non-confidential data.
+
+The platform shall nevertheless apply:
+
+- Least privilege.
+- Secret isolation.
+- Environment separation.
+- Encryption in transit.
+- Encryption at rest where supported.
+- Audit logging for administrative actions.
+- Secret rotation where supported.
+- Dependency vulnerability scanning.
+
+KLIBRA shall not store personal data unless explicitly required by a future approved use case.
+
+# 34. Cost Governance Requirements
+
+Cloud and provider consumption must be treated as first-class operational metrics.
+
+The platform shall monitor:
+
+- API request volume.
+- Compute hours.
+- Storage growth.
+- Query bytes scanned.
+- Retry amplification.
+- Pipeline runtime.
+
+The platform should prefer incremental extraction, caching, partition pruning, and bounded requests.
+
+# 35. Product Success Metrics
+
+Success shall be measured across four dimensions.
+
+## Data Reliability
+
+- Pipeline success rate.
+- Freshness attainment.
+- Source availability detection accuracy.
+
+## Data Trust
+
+- Quality gate pass rate.
+- Lineage coverage.
+- Contract coverage.
+- Number of unresolved critical data incidents.
+
+## Product Reuse
+
+- Number of consumers.
+- Number of recurring analytical workloads.
+- Number of dashboards/notebooks using semantic metrics.
+- Reduction in duplicated transformation logic.
+
+## Engineering Efficiency
+
+- Dataset onboarding lead time.
+- Mean time to detect data failure.
+- Mean time to recover.
+- Backfill success rate.
+
+# 36. Release Strategy
+
+## Release 0 — Foundation
+
+- Repository standards.
+- Source Catalog.
+- Data contracts.
+- Environment setup.
+- Baseline orchestration.
+- Observability conventions.
+
+## Release 1 — Trusted Data Foundation
+
+- World Bank.
+- ECB.
+- One self-service-key source from FRED/Alpha Vantage/CoinGecko.
+- Raw, Bronze, Silver, Gold.
+- Core quality gates.
+
+## Release 2 — Multi-Source Intelligence
+
+- IMF.
+- Additional market source.
+- Cross-source reconciliation.
+- Country benchmark.
+- Semantic metrics.
+
+## Release 3 — Intelligence Layer
+
+- Composite intelligence products.
+- Explainable scorecards.
+- Semantic API/serving.
+- Data catalog maturity.
+
+## Release 4 — Platform Hardening
+
+- Advanced source change detection.
+- Backfill automation.
+- Disaster recovery exercises.
+- Cost optimization.
+- Production readiness evidence.
+
+# 37. Acceptance Criteria
+
+KLIBRA is production-ready for Release 1 when:
+
+1. Every Release 1 source has been live-tested.
+2. No Release 1 source requires institutional proposal access.
+3. Access instructions are documented.
+4. Raw payloads are preserved immutably.
+5. Source metadata is captured.
+6. Silver models are standardized.
+7. Gold products have documented contracts.
+8. Blocking DQ checks are automated.
+9. Failed data is quarantined.
+10. Semantic metrics have owners and formulas.
+11. Intelligence products expose methodology and confidence where applicable.
+12. Lineage is visible for Gold and semantic outputs.
+13. Pipeline runs are observable.
+14. Alerts are actionable.
+15. CI/CD is reproducible.
+16. Backfill and rerun procedures are tested.
+17. Secrets are absent from source control.
+18. Cost controls are documented.
+19. At least one end-to-end consumer workflow is demonstrated.
+20. A failure drill has been executed and recorded.
+
+# 38. Constraints
+
+- Public APIs may impose rate limits.
+- Providers may revise historical data.
+- Definitions may differ across sources.
+- Some public services require self-service API keys.
+- Market data may have entitlement restrictions.
+- Provider availability is outside KLIBRA control.
+- Public does not necessarily mean unrestricted commercial redistribution.
+- Cloud cost must remain controlled.
+- Composite intelligence is analytical and not an authoritative economic statistic.
+
+# 39. Open Product Questions
+
+The following must be resolved through source reconnaissance and implementation evidence:
+
+1. Which exact indicator series provide sufficient coverage for each intelligence product?
+2. Which source should be the primary authority for each semantic metric?
+3. Which provider revisions can be reconstructed historically?
+4. Which market datasets fit the project's permitted usage terms?
+5. Which metrics require frequency alignment or interpolation?
+6. Which country/region crosswalk should become canonical?
+7. Which intelligence metrics are sufficiently robust to publish?
+8. What thresholds should trigger warning versus publication blocking?
+9. Which consumers need API serving versus direct SQL access?
+
+# 40. Product Governance
+
+Every production product must have:
+
+- Business owner.
+- Technical owner.
+- Data owner.
+- Definition.
+- Source lineage.
+- Quality policy.
+- Refresh policy.
+- Version policy.
+- Known limitations.
+- Change-management process.
+
+Semantic metric changes require the same governance discipline as schema changes.
+
+# 41. Decision Framework
+
+When requirements conflict, prioritize:
+
+1. Data correctness.
+2. Source traceability.
+3. User trust.
+4. Reliability.
+5. Security.
+6. Semantic consistency.
+7. Maintainability.
+8. Business usefulness.
+9. Performance.
+10. Cost.
+
+# 42. Final Product Definition
+
+KLIBRA is a governed global economic intelligence platform that converts heterogeneous public economic and market observations into trusted data products, reusable semantic metrics, and explainable intelligence products.
+
+KLIBRA is successful when a consumer can answer an economic question without needing to understand the peculiarities of every upstream provider, while an engineer can still trace every published result back to source evidence and processing history.
+
+# 43. Document Status
+
+This PRD defines KLIBRA product intent and business requirements.
+
+Implementation technology remains subject to the TDD, source profiling, ADRs, and actual workload evidence.
+
+Required companion artifacts:
+
+1. `source_catalog.md`
+2. Data profiling reports
+3. Data contracts
+4. Semantic metric catalog
+5. Intelligence methodology specifications
+6. Architecture Decision Records
+7. Technical Design Document
+8. Operational runbooks
+9. Production readiness review
+
+# Appendix A — External Source & Standards References
+
+The source-access baseline was validated against official provider documentation during PRD revision.
+
+- World Bank Indicators API documentation: <https://datahelpdesk.worldbank.org/knowledgebase/articles/889392>
+- IMF Data APIs: <https://data.imf.org/en/Resource-Pages/IMF-API>
+- FRED API key documentation: <https://fred.stlouisfed.org/docs/api/api_key.html>
+- ECB Data Portal API overview: <https://data.ecb.europa.eu/help/api/overview>
+- Alpha Vantage API documentation: <https://www.alphavantage.co/documentation/>
+- CoinGecko Demo API guide: <https://support.coingecko.com/hc/en-us/articles/21880397454233>
+
+These links define source access characteristics; they do not replace KLIBRA's own live-access validation.
