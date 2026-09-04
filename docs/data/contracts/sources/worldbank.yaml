@@ -1,0 +1,27 @@
+# Source contract — worldbank
+# Aligned to specs/001-klibra-platform/contracts/source-contract.schema.json.
+# PRD §31 — every promoted source must pass a live request.
+
+source_id: worldbank
+provider: "World Bank"
+endpoint: "https://api.worldbank.org/v2"
+dataset: "Indicators API"
+access_class: "A"
+authentication_model: "none"
+registration_steps:
+  - "No registration required; the API is public and rate-limited only by courtesy."
+rate_limit:
+  requests_per_minute: 0
+  daily_quota: null
+  concurrent: null
+  notes: "No documented hard limit; use a small sleep between requests."
+terms: "https://www.worldbank.org/en/about/legal/terms-of-use-for-datasets"
+historical_coverage: "1960-01-01"
+update_cadence: "MONTHLY"
+revision_behavior: "PERIODIC"
+contract_stability: "STABLE"
+last_verified_date: "2026-09-03"
+fallback_strategy: "https://api.worldbank.org/v2 download via bulk data export"
+owner: "data-platform@klibra.local"
+live_request_verified: true
+version: "1.0.0"

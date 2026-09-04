@@ -1,0 +1,74 @@
+# Gold contract — gold_macro_indicators
+# Aligned to specs/001-klibra-platform/contracts/observation-contract.schema.json
+# PRD §11.4 — every Gold product must have documented contract.
+
+dataset: gold_macro_indicators
+version: "1.0.0"
+owner: "klibra-data-platform"
+description: |
+  Consumer-oriented curated macro indicators (GDP growth, inflation,
+  unemployment) with standardized identifiers, units, and temporal semantics.
+  Each row is traceable back to the source via `lineage_ref`.
+grain:
+  - entity_id
+  - metric_id
+  - observation_date
+fields:
+  metric_id:
+    type: string
+    nullable: false
+    description: |
+      Standardized metric identifier (e.g. gdp_growth_rate, inflation_rate).
+  entity_id:
+    type: string
+    nullable: false
+    description: Country or region identifier.
+  geography_id:
+    type: string
+    nullable: false
+    description: Geography dimension matching dim_geography.geography_id.
+  observation_date:
+    type: date
+    nullable: false
+    description: The period the value refers to (e.g. 2023-01-01 for annual).
+  value:
+    type: decimal
+    nullable: true
+    description: Observation value in declared unit.
+  unit:
+    type: string
+    nullable: false
+    description: Unit of measure after standardization.
+  source_id:
+    type: string
+    nullable: false
+    description: Registered source identifier (dim_source.source_id).
+  dataset_id:
+    type: string
+    nullable: false
+    description: Registered dataset identifier (dim_dataset.dataset_id).
+  effective_from:
+    type: timestamp
+    nullable: false
+    description: SCD-2 start — when this version became active.
+  run_id:
+    type: string
+    nullable: false
+    description: Pipeline run ID (UUID) that produced this record.
+  payload_hash:
+    type: string
+    nullable: false
+    description: SHA-256 of the original source payload.
+  lineage_ref:
+    type: string
+    nullable: false
+    description: URL-style reference to the source fact for lineage tracing.
+quality:
+  freshness_hours: 720
+  duplicate_rate_max: 0
+  null_value_rate_max: 0.05
+  entity_coverage_min: 1.0
+known_limitations: |
+  - Values null when source provides no observation for a period.
+  - Gold layer reflects only current records (effective_to IS NULL).
+  - point-in-time queries require the Silver layer directly.

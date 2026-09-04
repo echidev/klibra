@@ -53,7 +53,7 @@ airflow_logs/
 dbt_logs/
 
 # ── Data & Cache ──────────────────────────────────────────
-data/
+/data/
 *.parquet
 *.avro
 *.csv
