@@ -112,10 +112,29 @@ def klibra_pipeline() -> None:
 
     @task(task_id="notify")
     def notify(publish_result: dict[str, Any]) -> None:
-        """Route run state, metrics, and alerts to owners."""
-        from ingestion.orchestration.tasks import notify_owners
+        """Route run state, metrics, and alerts to owners.
 
+        Emits an OpenMetadata lineage event and a CloudWatch alarm payload
+        per TDD §30 (publish/notify).
+        """
+        from orchestration.tasks import notify_owners
+        from orchestration.util.observability import (
+            emit_cloudwatch_alarm,
+            emit_openmetadata_event,
+        )
+
+        run_id = publish_result.get("gold_batch", {}).get("run_id", "")
+        dataset_id = publish_result.get("gold_batch", {}).get("dataset_id", "")
+        status = publish_result.get("status", "UNKNOWN")
         notify_owners(publish_result)
+        emit_openmetadata_event(run_id=run_id, dataset_id=dataset_id, status=status)
+        emit_cloudwatch_alarm(
+            payload={
+                "run_id": run_id,
+                "dataset_id": dataset_id,
+                "status": status,
+            }
+        )
 
     # ── Wire the graph ─────────────────────────────────────
     disc = discover()
