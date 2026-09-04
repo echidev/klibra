@@ -1,0 +1,148 @@
+# docker-compose.yml — KLIBRA local development stack
+# Aligned with TDD §35, plan.md § Compute Topology.
+#
+# Usage:
+#   docker compose up -d
+#   docker compose logs -f
+#   docker compose down -v  # tear down with volumes
+#
+# Credentials are dev-only. Do not reuse in any non-development environment.
+
+name: klibra-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: klibra-postgres
+    environment:
+      POSTGRES_DB: klibra
+      POSTGRES_USER: klibra
+      POSTGRES_PASSWORD: klibra
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U klibra -d klibra"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: klibra-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-bucket-init:
+    image: minio/mc:latest
+    container_name: klibra-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb -p local/klibra-data-raw &&
+      mc mb -p local/klibra-data-bronze &&
+      mc mb -p local/klibra-data-silver &&
+      mc mb -p local/klibra-data-gold &&
+      mc mb -p local/klibra-data-quarantine &&
+      mc mb -p local/klibra-data-metadata
+      "
+    restart: "no"
+
+  airflow-postgres:
+    image: postgres:16-alpine
+    container_name: klibra-airflow-postgres
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+    ports:
+      - "5433:5432"
+    volumes:
+      - airflow_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  airflow-webserver:
+    image: apache/airflow:2.10.0-python3.11
+    container_name: klibra-airflow-webserver
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__EXECUTOR: "LocalExecutor"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow"
+      AIRFLOW__CORE__FERNET_KEY: "CHANGE_ME_generate_with_airflow_rotate_fernet_key"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__WEBSERVER__SECRET_KEY: "CHANGE_ME"
+    command: >
+      bash -c "
+      airflow db init &&
+      airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@klibra.local || true &&
+      airflow webserver
+      "
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+
+  airflow-scheduler:
+    image: apache/airflow:2.10.0-python3.11
+    container_name: klibra-airflow-scheduler
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__EXECUTOR: "LocalExecutor"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow"
+    command: >
+      bash -c "
+      airflow db init &&
+      airflow scheduler
+      "
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+
+  openmetadata:
+    image: openmetadata/server:1.5.0
+    container_name: klibra-openmetadata
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: klibra
+      DB_PASS: klibra
+      DB_DATABASE: openmetadata
+      SERVER_PORT: 8585
+    ports:
+      - "8585:8585"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres_data:
+  airflow_pg_data:
+  minio_data:
