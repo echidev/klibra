@@ -8,7 +8,6 @@ TDD §17 requires:
 
 from __future__ import annotations
 
-import datetime as dt
 from dataclasses import dataclass
 from enum import Enum
 

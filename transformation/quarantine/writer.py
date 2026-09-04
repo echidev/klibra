@@ -34,7 +34,7 @@ class QuarantineRecord:
             object.__setattr__(
                 self,
                 "timestamp",
-                dt.datetime.now(dt.timezone.utc).isoformat(),
+                dt.datetime.now(dt.UTC).isoformat(),
             )
 
 

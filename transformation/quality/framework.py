@@ -43,27 +43,21 @@ class QualityOutcome(str, Enum):
 class QualityFramework:
     """Quality gate with batch/record/dataset/business level checks."""
 
-    def evaluate_batch(
-        self, *, payload_present: bool, schema_valid: bool
-    ) -> QualityOutcome:
+    def evaluate_batch(self, *, payload_present: bool, schema_valid: bool) -> QualityOutcome:
         if not payload_present:
             return QualityOutcome.REJECTED
         if not schema_valid:
             return QualityOutcome.QUARANTINED
         return QualityOutcome.ACCEPTED
 
-    def evaluate_record(
-        self, *, value: Any, type_valid: bool, range_valid: bool
-    ) -> QualityOutcome:
+    def evaluate_record(self, *, value: Any, type_valid: bool, range_valid: bool) -> QualityOutcome:
         if not type_valid:
             return QualityOutcome.QUARANTINED
         if not range_valid:
             return QualityOutcome.ACCEPTED_WARNING
         return QualityOutcome.ACCEPTED
 
-    def evaluate_dataset(
-        self, *, duplicate_rate: float, completeness: float
-    ) -> QualityOutcome:
+    def evaluate_dataset(self, *, duplicate_rate: float, completeness: float) -> QualityOutcome:
         if duplicate_rate > 0.0:
             return QualityOutcome.QUARANTINED
         if completeness < 0.95:

@@ -1,0 +1,122 @@
+# KLIBRA Source Catalog — production artifact (PRD §31, §10.1)
+#
+# A source SHALL NOT be promoted to Release 1 solely because documentation
+# exists. A live request must succeed in the project environment (FR-02).
+# Update `last_verified_date` whenever an endpoint is revalidated.
+#
+# Sources listed here are the Release 1 baseline (PRD §10.1, TDD §60).
+# Access classes: A = public no key, B = self-service key,
+#                  C = portal/account considerations.
+
+sources:
+  worldbank:
+    provider: "World Bank"
+    dataset: "Indicators API"
+    access_class: "A"
+    auth_model: "none"
+    endpoint: "https://api.worldbank.org/v2"
+    rate_limit:
+      requests_per_minute: 0
+      notes: "No documented hard limit; use courteous pacing."
+    terms: "https://www.worldbank.org/en/about/legal/terms-of-use-for-datasets"
+    historical_coverage: "1960-01-01"
+    update_cadence: "MONTHLY"
+    revision_behavior: "PERIODIC"
+    contract_stability: "STABLE"
+    last_verified_date: "2026-09-03"
+    fallback_strategy: "https://api.worldbank.org/v2 download via bulk data"
+    owner: "data-platform@klibra.local"
+
+  ecb:
+    provider: "European Central Bank"
+    dataset: "Data Portal (SDMX)"
+    access_class: "A"
+    auth_model: "none"
+    endpoint: "https://sdw-wsrest.ecb.europa.eu/service"
+    rate_limit:
+      requests_per_minute: 10
+      notes: "Respect HTTP 429; supports updatedAfter cursor."
+    terms: "https://www.ecb.europa.eu/ecb/legal/copyright/html/index.en.html"
+    historical_coverage: "1999-01-01"
+    update_cadence: "DAILY"
+    revision_behavior: "FREQUENT"
+    contract_stability: "STABLE"
+    last_verified_date: "2026-09-03"
+    fallback_strategy: "https://data.ecb.europa.eu bulk download (includeHistory)"
+    owner: "data-platform@klibra.local"
+
+  fred:
+    provider: "FRED (Federal Reserve)"
+    dataset: "Web Services (Macro / Interest Rates)"
+    access_class: "B"
+    auth_model: "api_key"
+    endpoint: "https://api.stlouisfed.org/fred"
+    auth_env: "FRED_API_KEY"
+    rate_limit:
+      requests_per_minute: 120
+      notes: "Max 120 req/min public; keys via self-service registration."
+    terms: "https://fred.stlouisfed.org/docs/api/terms_of_use.html"
+    historical_coverage: "1929-01-01"
+    update_cadence: "DAILY"
+    revision_behavior: "PERIODIC"
+    contract_stability: "STABLE"
+    last_verified_date: "2026-09-03"
+    fallback_strategy: "https://fred.stlouisfed.org download CSV"
+    owner: "data-platform@klibra.local"
+
+  imf:
+    provider: "International Monetary Fund"
+    dataset: "Data Mapper / SDMX API"
+    access_class: "C"
+    auth_model: "account-inactive"
+    endpoint: "https://sdmxcentral.imf.org/ws/public/sdmxapi/rest"
+    rate_limit:
+      requests_per_minute: 0
+      notes: "Portal/account path to validate before promotion (FR-02, TDD §13.3)."
+    terms: "https://www.imf.org/external/terms.htm"
+    historical_coverage: "1980-01-01"
+    update_cadence: "QUARTERLY"
+    revision_behavior: "PERIODIC"
+    contract_stability: "OCCASIONAL_DRIFT"
+    last_verified_date: "unverified"
+    fallback_strategy: "https://www.imf.org/external/datamapper"
+    owner: "data-platform@klibra.local"
+    live_request_verified: false
+
+  alphavantage:
+    provider: "Alpha Vantage"
+    dataset: "Market / FX / Commodities"
+    access_class: "B"
+    auth_model: "api_key"
+    endpoint: "https://www.alphavantage.co/query"
+    auth_env: "ALPHAVANTAGE_API_KEY"
+    rate_limit:
+      requests_per_minute: 5
+      notes: "Free tier ~5 req/min / 25 req/day (varies); demo key."
+    terms: "https://www.alphavantage.co/terms_of_service/"
+    historical_coverage: "~20 years"
+    update_cadence: "DAILY"
+    revision_behavior: "NONE"
+    contract_stability: "STABLE"
+    last_verified_date: "2026-09-03"
+    fallback_strategy: "https://www.alphavantage.co/documentation/ bulk CSV"
+    owner: "data-platform@klibra.local"
+
+  coingecko:
+    provider: "CoinGecko"
+    dataset: "Demo API (Crypto Market)"
+    access_class: "B"
+    auth_model: "api_key"
+    endpoint: "https://api.coingecko.com/api/v3"
+    auth_env: "COINGECKO_DEMO_API_KEY"
+    rate_limit:
+      requests_per_minute: 30
+      notes: "Demo key: x-cg-demo-api-key header; request budget low."
+    terms: "https://www.coingecko.com/en/terms"
+    historical_coverage: "2013-01-01"
+    update_cadence: "DAILY"
+    revision_behavior: "NONE"
+    contract_stability: "OCCASIONAL_DRIFT"
+    last_verified_date: "2026-09-03"
+    fallback_strategy: "https://www.coingecko.com/en/api_terms bulk"
+    owner: "data-platform@klibra.local"

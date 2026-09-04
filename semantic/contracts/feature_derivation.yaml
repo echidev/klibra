@@ -1,0 +1,32 @@
+# Feature derivation contract — TDD §77.
+
+model: feature_derivation
+version: "1.0.0"
+owner: "data-engineering@klibra.local"
+description: |
+  Defines the reproducibility requirements for features derived from
+  KLIBRA semantic metrics. Ensures that Data Scientists can reconstruct
+  features deterministically from versioned inputs (Constitution §II).
+
+required_fields:
+  metric_version:
+    type: string
+    description: semver of the semantic metric used
+  source_snapshot_id:
+    type: string
+    description: id of the Gold/Silver snapshot used
+  calculation_timestamp:
+    type: datetime
+    description: UTC timestamp when the calculation ran
+  feature_code_version:
+    type: string
+    description: version of the feature derivation code
+
+constraints:
+  - same metric_version + source_snapshot_id + calculation_timestamp = identical output
+  - feature_code_version must be recorded in manifest for traceability
+
+consumers:
+  - Data Scientists building models
+  - Notebooks using reproducible point-in-time snapshots
+  - API consumers requiring deterministic feature generation

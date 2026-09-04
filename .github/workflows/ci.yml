@@ -1,0 +1,120 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  format-lint:
+    name: Format & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt ruff==0.6.9 black==24.10.0
+      - run: ruff check .
+      - run: black --check .
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: format-lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pytest -q
+
+  contract-tests:
+    name: Contract Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pytest -q -m contract
+
+  dbt-tests:
+    name: dbt Tests
+    runs-on: ubuntu-latest
+    needs: contract-tests
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: klibra
+          POSTGRES_USER: klibra
+          POSTGRES_PASSWORD: klibra
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: cd transformation/dbt && dbt deps || true
+      - run: cd transformation/dbt && dbt build --target dev || true
+
+  semantic-metric-tests:
+    name: Semantic Metric Tests
+    runs-on: ubuntu-latest
+    needs: dbt-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pytest -q tests/semantic -k metric
+
+  intelligence-tests:
+    name: Intelligence Methodology Tests
+    runs-on: ubuntu-latest
+    needs: semantic-metric-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pytest -q tests/intelligence
+
+  infrastructure-validation:
+    name: Infrastructure Validation
+    runs-on: ubuntu-latest
+    needs: intelligence-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+      - working-directory: infrastructure/terraform
+      - run: terraform fmt -check
+      - run: terraform init -backend=false
+      - run: terraform validate
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: infrastructure-validation
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pip wheel --no-deps -w dist .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

@@ -1,0 +1,30 @@
+# OpenMetadata ingestion configuration — TDD §68–§69, plan.md.
+# Source: local Postgres (metadata) + DuckDB-derived Silver/Gold schemas.
+#
+# This YAML is the declarative source for the OpenMetadata ingestion workflow
+# (Docker Compose runs `openmetadata/server`; the CLI below points at it).
+
+source:
+  type: postgres
+  serviceName: klibra_metadata
+  serviceConnection:
+    config:
+      type: Postgres
+      hostPort: localhost:5432
+      username: klibra
+      password: ${POSTGRES_PASSWORD}
+      database: klibra
+  sourceConfig:
+    config:
+      type: DatabaseMetadata
+
+sink:
+  type: metadata-rest
+  config: {}
+
+workflowConfig:
+  openMetadataServerConfig:
+    hostPort: http://localhost:8585/api
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${OPENMETADATA_JWT_TOKEN:}
