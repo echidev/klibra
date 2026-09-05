@@ -17,9 +17,41 @@ from __future__ import annotations
 import datetime as dt
 from typing import Any
 
-from airflow.decorators import dag, task
-from airflow.operators.empty import EmptyOperator
-from airflow.utils.trigger_rule import TriggerRule
+try:
+    from airflow.decorators import dag, task
+    from airflow.operators.empty import EmptyOperator
+    from airflow.utils.trigger_rule import TriggerRule
+except ModuleNotFoundError:  # pragma: no cover - only used outside Airflow
+
+    class _FallbackTask:
+        def __init__(self, callable_: Any) -> None:
+            self.callable = callable_
+
+        def __call__(self, *_args: Any, **_kwargs: Any) -> _FallbackTask:
+            return self
+
+        def __rshift__(self, other: Any) -> Any:
+            return other
+
+    def task(**_kwargs: Any) -> Any:
+        def decorator(callable_: Any) -> _FallbackTask:
+            return _FallbackTask(callable_)
+
+        return decorator
+
+    def dag(**_kwargs: Any) -> Any:
+        def decorator(callable_: Any) -> Any:
+            return callable_
+
+        return decorator
+
+    class EmptyOperator(_FallbackTask):  # type: ignore[no-redef]
+        def __init__(self, **_kwargs: Any) -> None:
+            super().__init__(lambda: None)
+
+    class TriggerRule:  # type: ignore[no-redef]
+        ALL_DONE = "all_done"
+
 
 __all__ = ["klibra_pipeline"]
 
@@ -50,63 +82,63 @@ def klibra_pipeline() -> None:
     @task(task_id="discover")
     def discover() -> dict[str, Any]:
         """Enumerate eligible sources/datasets from the source catalog."""
-        from ingestion.orchestration.tasks import discover_datasets
+        from orchestration.tasks import discover_datasets
 
         return discover_datasets()
 
     @task(task_id="extract")
     def extract(dataset: dict[str, Any]) -> dict[str, Any]:
         """Run connectors and persist raw payloads."""
-        from ingestion.orchestration.tasks import run_extraction
+        from orchestration.tasks import run_extraction
 
         return run_extraction(dataset)
 
     @task(task_id="raw_validation")
     def raw_validation(extraction: dict[str, Any]) -> dict[str, Any]:
         """Validate that the raw payload is well-formed and hashable."""
-        from ingestion.orchestration.tasks import validate_raw
+        from orchestration.tasks import validate_raw
 
         return validate_raw(extraction)
 
     @task(task_id="bronze")
     def bronze(validation: dict[str, Any]) -> dict[str, Any]:
         """Parse source-aligned records into Bronze."""
-        from ingestion.orchestration.tasks import build_bronze
+        from orchestration.tasks import build_bronze
 
         return build_bronze(validation)
 
     @task(task_id="quality_gate")
     def quality_gate(bronze_batch: dict[str, Any]) -> dict[str, Any]:
         """Apply four-level quality framework; quarantine P0/P1 failures."""
-        from ingestion.orchestration.tasks import apply_quality_gate
+        from orchestration.tasks import apply_quality_gate
 
         return apply_quality_gate(bronze_batch)
 
     @task(task_id="silver")
     def silver(quality_passed: dict[str, Any]) -> dict[str, Any]:
         """Standardize to fact_economic_observation + dimensions."""
-        from ingestion.orchestration.tasks import build_silver
+        from orchestration.tasks import build_silver
 
         return build_silver(quality_passed)
 
     @task(task_id="silver_quality")
     def silver_quality(silver_batch: dict[str, Any]) -> dict[str, Any]:
         """Run dbt tests on Silver models."""
-        from ingestion.orchestration.tasks import run_silver_tests
+        from orchestration.tasks import run_silver_tests
 
         return run_silver_tests(silver_batch)
 
     @task(task_id="gold")
     def gold(silver_passed: dict[str, Any]) -> dict[str, Any]:
         """Run dbt to build Gold data products."""
-        from ingestion.orchestration.tasks import build_gold
+        from orchestration.tasks import build_gold
 
         return build_gold(silver_passed)
 
     @task(task_id="publish")
     def publish(gold_batch: dict[str, Any]) -> dict[str, Any]:
         """Make Gold products discoverable to consumers."""
-        from ingestion.orchestration.tasks import publish_gold
+        from orchestration.tasks import publish_gold
 
         return publish_gold(gold_batch)
 
@@ -148,11 +180,12 @@ def klibra_pipeline() -> None:
     pu = publish(go)
     notify(pu)
 
-    # Terminal catch-all in case notify is bypassed
-    EmptyOperator(
+    # Terminal catch-all in case notify is bypassed.
+    finalize = EmptyOperator(
         task_id="finalize",
         trigger_rule=TriggerRule.ALL_DONE,
-    ).set_downstream(pu)
+    )
+    pu >> finalize
 
 
 dag_instance = klibra_pipeline()

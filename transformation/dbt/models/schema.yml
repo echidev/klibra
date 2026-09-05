@@ -1,0 +1,74 @@
+version: 2
+
+models:
+  - name: bronze_worldbank_indicators
+    columns:
+      - name: source_id
+        tests: [not_null]
+      - name: dataset_id
+        tests: [not_null]
+      - name: indicator_id
+        tests: [not_null]
+      - name: observation_date
+        tests: [not_null]
+      - name: payload_hash
+        tests: [not_null]
+
+  - name: dim_source
+    columns:
+      - name: source_id
+        tests: [not_null, unique]
+
+  - name: dim_dataset
+    columns:
+      - name: dataset_id
+        tests: [not_null, unique]
+      - name: source_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_source')
+                field: source_id
+
+  - name: fact_economic_observation
+    columns:
+      - name: observation_id
+        tests: [not_null, unique]
+      - name: metric_id
+        tests: [not_null]
+      - name: entity_id
+        tests: [not_null]
+      - name: geography_id
+        tests: [not_null]
+      - name: observation_date
+        tests: [not_null]
+      - name: value
+        tests: [not_null]
+      - name: source_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_source')
+                field: source_id
+      - name: dataset_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_dataset')
+                field: dataset_id
+
+  - name: gold_macro_indicators
+    columns:
+      - name: metric_id
+        tests: [not_null]
+      - name: entity_id
+        tests: [not_null]
+      - name: observation_date
+        tests: [not_null]
+      - name: value
+        tests: [not_null]
+      - name: lineage_ref
+        tests: [not_null]

@@ -8,10 +8,14 @@ idempotency checks and lineage.
 Example call::
 
     from ingestion.util.manifest import sha256_hex, build_manifest
+
     content_hash = sha256_hex(payload)
     manifest = build_manifest(
-        source_id="worldbank", dataset_id="NY.GDP.MKTP.CD",
-        run_id=run_id, source_url=url, content_hash=content_hash,
+        source_id="worldbank",
+        dataset_id="NY.GDP.MKTP.CD",
+        run_id=run_id,
+        source_url=url,
+        content_hash=content_hash,
     )
 """
 

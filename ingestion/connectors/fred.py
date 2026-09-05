@@ -156,14 +156,7 @@ class FredConnector(SourceConnectorBase):
         body = json.loads(response.body)
         return list(body.get("observations") or [])
 
-    def extract(
-        self,
-        *,
-        observation_start: str | None = None,
-        observation_end: str | None = None,
-        realtime_start: str | None = None,
-        realtime_end: str | None = None,
-    ) -> ExtractionResult:
+    def extract(self, **kwargs: Any) -> ExtractionResult:
         """Fetch metadata + observations and merge into a single payload.
 
         The payload is the raw ``/series/observations`` JSON. Bronze parsing
@@ -171,7 +164,11 @@ class FredConnector(SourceConnectorBase):
         """
 
         # We call both endpoints. Metadata first to fail fast on bad series_id.
-        self._fetch_metadata()
+        observation_start = kwargs.get("observation_start")
+        observation_end = kwargs.get("observation_end")
+        realtime_start = kwargs.get("realtime_start")
+        realtime_end = kwargs.get("realtime_end")
+        metadata = self._fetch_metadata()
         obs_payload = self._fetch_observations(
             observation_start=observation_start,
             observation_end=observation_end,
@@ -181,7 +178,7 @@ class FredConnector(SourceConnectorBase):
 
         import json
 
-        body = json.dumps({"observations": obs_payload}).encode()
+        body = json.dumps({"metadata": metadata, "observations": obs_payload}).encode()
         url = (
             f"{self.base_url}/series/observations"
             f"?series_id={self.dataset_id}&api_key=***&file_type=json"
@@ -193,7 +190,12 @@ class FredConnector(SourceConnectorBase):
                 "observation_start": observation_start or "",
                 "observation_end": observation_end or "",
             },
-            response_metadata={"status_code": 200, "observation_count": str(len(obs_payload))},
+            response_metadata={
+                "status_code": 200,
+                "observation_count": str(len(obs_payload)),
+                "title": str(metadata.get("title", "")),
+                "frequency": str(metadata.get("frequency_short", "")),
+            },
             payload_format="json",
             source_publication_timestamp=dt.datetime.now(dt.UTC),
             source_version=None,

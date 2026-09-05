@@ -32,6 +32,7 @@ __all__ = [
     "REQUEST_TIMEOUT_SECONDS",
     "SourceConnectorBase",
     "SourceMetadata",
+    "sanitize_request_params",
 ]
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,19 @@ REQUEST_TIMEOUT_SECONDS = float(os.environ.get("KLIBRA_CONNECTOR_TIMEOUT", "30.0
 
 # Default User-Agent string identifying KLIBRA to upstream providers.
 DEFAULT_USER_AGENT = "klibra-platform/0.1.0 (+https://github.com/echidev/klibra)"
+_SENSITIVE_PARAM_PARTS = ("key", "token", "secret", "password", "credential")
+
+
+def sanitize_request_params(params: dict[str, Any]) -> dict[str, Any]:
+    """Return request metadata with credential-like values redacted."""
+    sanitized: dict[str, Any] = {}
+    for name, value in params.items():
+        lowered = name.lower()
+        if any(part in lowered for part in _SENSITIVE_PARAM_PARTS):
+            sanitized[name] = "***"
+        else:
+            sanitized[name] = value
+    return sanitized
 
 
 class ConnectorCapability(enum.Enum):
@@ -92,7 +106,7 @@ def send_request(
     Retries on transient errors: connection errors, timeouts, and HTTP 429/5xx.
     Respects ``Retry-After`` from the upstream if present.
     """
-    import requests  # local import to keep the base module pure
+    import requests  # type: ignore[import-untyped]  # local import
 
     headers = dict(request.headers)
     headers.setdefault("User-Agent", DEFAULT_USER_AGENT)
@@ -126,7 +140,7 @@ def send_request(
         if response.status_code in (429, 500, 502, 503, 504):
             if attempt > max_retries:
                 response.raise_for_status()
-                break
+                raise RuntimeError("HTTP retry loop ended unexpectedly")
             retry_after = response.headers.get("Retry-After")
             if retry_after:
                 try:
@@ -288,6 +302,7 @@ class SourceConnectorBase(abc.ABC):
         Implementations perform the actual HTTP call. The caller
         is responsible for surrounding retries and rate-limiting.
         """
+        raise NotImplementedError
 
     def persist_raw(self, result: ExtractionResult) -> str:
         """Persist the raw payload under the lakehouse layout.
@@ -313,7 +328,7 @@ class SourceConnectorBase(abc.ABC):
             dataset_id=self.dataset_id,
             retrieval_timestamp=dt.datetime.now(tz=dt.UTC),
             source_url=result.source_url,
-            request_params=dict(result.request_params),
+            request_params=sanitize_request_params(result.request_params),
             response_metadata=dict(result.response_metadata),
             content_hash=content_hash,
             payload_format=result.payload_format,

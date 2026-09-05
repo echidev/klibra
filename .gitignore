@@ -51,6 +51,8 @@ log/
 __logs__/
 airflow_logs/
 dbt_logs/
+transformation/dbt/target/
+transformation/dbt/.user.yml
 
 # ── Data & Cache ──────────────────────────────────────────
 /data/
@@ -72,6 +74,7 @@ minio_data/
 coverage/
 htmlcov/
 .coverage
+coverage.xml
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

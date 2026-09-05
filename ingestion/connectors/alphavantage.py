@@ -97,7 +97,7 @@ class AlphaVantageConnector(SourceConnectorBase):
         return ExtractionResult(
             payload=body,
             source_url=response.url,
-            request_params=dict(params),
+            request_params={"function": self.function, "symbol": self.dataset_id},
             response_metadata={"status_code": response.status_code, "function": self.function},
             payload_format="json",
             source_publication_timestamp=dt.datetime.now(dt.UTC),

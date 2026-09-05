@@ -1,0 +1,8 @@
+klibra:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "target/klibra.duckdb"
+      schema: main
+      threads: 4

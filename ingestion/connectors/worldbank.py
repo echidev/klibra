@@ -4,17 +4,19 @@ Public API, no credential required (Access Class A). Returns JSON envelopes of
 the form::
 
     [
-      {"page": 1, "pages": 1, "per_page": "100", "total": 1},
-      [
-        {"indicator": {"id": "NY.GDP.MKTP.CD", "value": "GDP (current US$)"},
-         "country": {"id": "USA", "value": "United States"},
-         "countryiso3code": "USA",
-         "date": "2023",
-         "value": 27360900000000.0,
-         "unit": "",
-         "obs_status": "",
-         "decimal": 0}
-      ]
+        {"page": 1, "pages": 1, "per_page": "100", "total": 1},
+        [
+            {
+                "indicator": {"id": "NY.GDP.MKTP.CD", "value": "GDP (current US$)"},
+                "country": {"id": "USA", "value": "United States"},
+                "countryiso3code": "USA",
+                "date": "2023",
+                "value": 27360900000000.0,
+                "unit": "",
+                "obs_status": "",
+                "decimal": 0,
+            }
+        ],
     ]
 
 The connector normalizes each record to a source-aligned dict, attaches
@@ -29,7 +31,7 @@ import logging
 import urllib.parse
 from typing import Any
 
-import requests
+import requests  # type: ignore[import-untyped]
 
 from ingestion.connectors.base import (
     ExtractionResult,
@@ -116,12 +118,7 @@ class WorldBankConnector(SourceConnectorBase):
             params["date"] = date_range
         return f"{self.base_url}{path}?{urllib.parse.urlencode(params)}"
 
-    def extract(
-        self,
-        *,
-        date_range: str | None = None,
-        format: str = "json",
-    ) -> ExtractionResult:
+    def extract(self, **kwargs: Any) -> ExtractionResult:
         """Fetch one indicator (or the catalog when ``dataset_id == 'all'``).
 
         Parameters
@@ -132,6 +129,8 @@ class WorldBankConnector(SourceConnectorBase):
             API response format. ``"json"`` (default) or ``"xml"``.
         """
 
+        date_range = kwargs.get("date_range")
+        format = kwargs.get("format", "json")
         url = self._build_url(self.dataset_id, date_range=date_range, format=format)
         logger.info(
             "worldbank request source=%s indicator=%s url=%s",

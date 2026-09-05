@@ -8,6 +8,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "raw" {
     id     = "raw-tiering"
     status = "Enabled"
 
+    filter {}
+
     transition {
       days          = 90
       storage_class = "STANDARD_IA"
@@ -36,6 +38,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "silver_gold" {
   rule {
     id     = "${each.key}-tiering"
     status = "Enabled"
+
+    filter {}
 
     transition {
       days          = 30

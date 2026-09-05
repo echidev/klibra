@@ -11,7 +11,7 @@ import hashlib
 import json
 import re
 
-from intelligence.composite import MethodologyVersionBumpRequired  # type: ignore[attr-defined]
+from intelligence.composite import MethodologyVersionBumpRequired
 
 __all__ = ["check_weights_pinned", "pin_weights"]
 

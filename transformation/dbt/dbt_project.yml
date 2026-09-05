@@ -1,0 +1,27 @@
+name: klibra
+version: "0.1.0"
+config-version: 2
+
+profile: klibra
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  klibra:
+    +schema: klibra
+    bronze:
+      +materialized: table
+    silver:
+      +materialized: table
+    gold:
+      +materialized: table
+
+seeds:
+  klibra:
+    +schema: klibra_seed

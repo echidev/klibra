@@ -57,6 +57,7 @@ class IntelligenceScore:
     input_snapshot_id: str
     components: dict[str, float]  # {component_metric_id: normalized_value}
     contributions: dict[str, float]  # {component_metric_id: normalized_value * weight}
+    weights: dict[str, float]
     calculated_at: str = field(default_factory=lambda: dt.datetime.now(dt.UTC).isoformat())
     score_band: str = "MEDIUM"
     lineage_ref: str | None = None
@@ -144,6 +145,7 @@ class CompositeScorer(ABC):
             input_snapshot_id=input_snapshot_id,
             components=dict(normalized),
             contributions=contributions,
+            weights=dict(self.weights),
             score_band=self._band(score),
             lineage_ref=lineage_ref,
         )

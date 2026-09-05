@@ -13,7 +13,7 @@ BEGIN;
 -- ── Intelligence score tables (TDD §64–§65, Constitution §6.2) ─
 CREATE TABLE fact_intelligence_score (
     score_id                UUID PRIMARY KEY,
-    metric_id               TEXT NOT NULL REFERENCES metric_registry(metric_id),
+    metric_id               TEXT NOT NULL,
     entity_id               TEXT NOT NULL,
     observation_period      DATE NOT NULL,
     score                   NUMERIC(8, 4) NOT NULL CHECK (score >= 0 AND score <= 100),
@@ -45,22 +45,20 @@ CREATE TABLE fact_intelligence_component (
 -- is enforced at the application layer and validated by contract tests; a
 -- DB-level constraint on the sum would require a more complex trigger.
 
--- ── Seed data: 8 semantic metrics per TDD §63 ───────────────
--- Inserted here so local dev gets metrics out-of-the-box.
 INSERT INTO metric_registry (
-    metric_id, name, description, version, owner, grain, unit, formula,
+    metric_id, display_name, description, version, owner_email, grain, unit, formula,
     source_policy, aggregation_policy, time_semantics, lineage_ref,
     effective_from, deprecation_status
 ) VALUES
- ('gdp_growth_rate',           'GDP growth rate',           'Annual GDP growth rate (percent)',        '1.0.0', 'data-platform@klibra.local', '["country", "indicator", "observation_period"]', 'percent', '(x - x_prev) / x_prev * 100', '["worldbank", "fred"]', 'AVERAGING', 'annual',  NULL, 'ACTIVE' ),
- ('inflation_rate',            'Inflation rate',            'Consumer price inflation (percent)',      '1.0.0', 'data-platform@klibra.local', '["country", "indicator", "observation_period"]', 'percent', '(cpi - cpi_prev) / cpi_prev * 100',       '["worldbank", "fred", "ecb"]', 'AVERAGING', 'monthly',  NULL, 'ACTIVE' ),
- ('unemployment_rate',         'Unemployment rate',         'Share of labour force unemployed',        '1.0.0', 'data-platform@klibra.local', '["country", "indicator", "observation_period"]', 'percent', 'unemployed / labour_force * 100',     '["worldbank"]', 'AVERAGING', 'quarterly', NULL, 'ACTIVE' ),
- ('policy_rate',               'Policy rate',               'Central-bank policy rate',                '1.0.0', 'data-platform@klibra.local', '["country", "indicator", "observation_period"]', 'percent', 'rate',                              '["fred", "ecb"]', 'LATEST_OBSERVATION', 'monthly', NULL, 'ACTIVE' ),
- ('real_policy_rate',          'Real policy rate',          'Policy rate adjusted for inflation',      '1.0.0', 'data-platform@klibra.local', '["country", "indicator", "observation_period"]', 'percent', 'policy_rate - inflation_rate',        '["fred", "ecb", "worldbank"]', 'AVERAGING', 'monthly', NULL, 'ACTIVE' ),
- ('fx_return',                 'FX return',                 'Period-over-period FX return',            '1.0.0', 'data-platform@klibra.local', '["pair", "observation_period"]',             'percent', '(fx_t / fx_{t-1} - 1) * 100',         '["ecb", "alphavantage"]', 'ADDITIVE', 'daily',  NULL, 'ACTIVE' ),
- ('market_volatility',         'Market volatility',         'Realized volatility (percent)',           '1.0.0', 'data-platform@klibra.local', '["instrument", "observation_period"]',      'percent', 'std(log_return) * sqrt(252)',       '["alphavantage", "fred"]', 'AVERAGING', 'daily', NULL, 'ACTIVE' ),
- ('debt_to_gdp',               'Debt to GDP',               'Public debt as share of GDP',             '1.0.0', 'data-platform@klibra.local', '["country", "indicator", "observation_period"]', 'percent', 'debt / gdp * 100',                '["worldbank"]', 'END_OF_PERIOD', 'annual', NULL, 'ACTIVE' )
-ON CONFLICT (metric_id) DO NOTHING;
+ ('gdp_growth_rate', 'GDP growth rate', 'Annual GDP growth rate (percent)', '1.0.0', 'data-platform@klibra.local', '["country", "indicator", "observation_period"]', 'percent', '(x - x_prev) / x_prev * 100', '["worldbank", "fred"]', 'AVERAGING', 'annual', NULL, CURRENT_DATE, 'ACTIVE'),
+ ('inflation_rate', 'Inflation rate', 'Consumer price inflation (percent)', '1.0.0', 'data-platform@klibra.local', '["country", "indicator", "observation_period"]', 'percent', '(cpi - cpi_prev) / cpi_prev * 100', '["worldbank", "fred", "ecb"]', 'AVERAGING', 'monthly', NULL, CURRENT_DATE, 'ACTIVE'),
+ ('unemployment_rate', 'Unemployment rate', 'Share of labour force unemployed', '1.0.0', 'data-platform@klibra.local', '["country", "indicator", "observation_period"]', 'percent', 'unemployed / labour_force * 100', '["worldbank"]', 'AVERAGING', 'quarterly', NULL, CURRENT_DATE, 'ACTIVE'),
+ ('policy_rate', 'Policy rate', 'Central-bank policy rate', '1.0.0', 'data-platform@klibra.local', '["country", "indicator", "observation_period"]', 'percent', 'rate', '["fred", "ecb"]', 'LATEST_OBSERVATION', 'monthly', NULL, CURRENT_DATE, 'ACTIVE'),
+ ('real_policy_rate', 'Real policy rate', 'Policy rate adjusted for inflation', '1.0.0', 'data-platform@klibra.local', '["country", "indicator", "observation_period"]', 'percent', 'policy_rate - inflation_rate', '["fred", "ecb", "worldbank"]', 'AVERAGING', 'monthly', NULL, CURRENT_DATE, 'ACTIVE'),
+ ('fx_return', 'FX return', 'Period-over-period FX return', '1.0.0', 'data-platform@klibra.local', '["pair", "observation_period"]', 'percent', '(fx_t / fx_{t-1} - 1) * 100', '["ecb", "alphavantage"]', 'ADDITIVE', 'daily', NULL, CURRENT_DATE, 'ACTIVE'),
+ ('market_volatility', 'Market volatility', 'Realized volatility (percent)', '1.0.0', 'data-platform@klibra.local', '["instrument", "observation_period"]', 'percent', 'std(log_return) * sqrt(252)', '["alphavantage", "fred"]', 'AVERAGING', 'daily', NULL, CURRENT_DATE, 'ACTIVE'),
+ ('debt_to_gdp', 'Debt to GDP', 'Public debt as share of GDP', '1.0.0', 'data-platform@klibra.local', '["country", "indicator", "observation_period"]', 'percent', 'debt / gdp * 100', '["worldbank"]', 'END_OF_PERIOD', 'annual', NULL, CURRENT_DATE, 'ACTIVE')
+ON CONFLICT (metric_id, version) DO NOTHING;
 
 -- ── Alembic version marker (semver; filled by Alembic revision) ─
 -- If Alembic is in use, add: INSERT INTO alembic_version (version_num) VALUES ('v002');

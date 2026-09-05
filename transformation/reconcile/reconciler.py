@@ -95,8 +95,8 @@ class Reconciler:
             ra = index_a.get(key)
             rb = index_b.get(key)
             metric_id, entity_id, observation_date = key
-            value_a = ra.get("value") if ra else None  # type: ignore[union-attr]
-            value_b = rb.get("value") if rb else None  # type: ignore[union-attr]
+            value_a = ra.get("value") if ra else None
+            value_b = rb.get("value") if rb else None
             diff_abs, diff_pct, sign, divergent = self._diff(value_a, value_b)
             if divergent:
                 divergence_count += 1

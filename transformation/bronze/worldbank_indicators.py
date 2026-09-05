@@ -9,12 +9,12 @@ Output schema (one row per record)::
     {
         "source_id": str,
         "dataset_id": str,
-        "country_id": str,            # ISO2 (e.g. "USA")
-        "country_iso3": str,          # ISO3 (e.g. "USA")
+        "country_id": str,  # ISO2 (e.g. "USA")
+        "country_iso3": str,  # ISO3 (e.g. "USA")
         "country_name": str,
-        "indicator_id": str,          # e.g. "NY.GDP.MKTP.CD"
+        "indicator_id": str,  # e.g. "NY.GDP.MKTP.CD"
         "indicator_name": str,
-        "observation_date": str,      # year as "YYYY"
+        "observation_date": str,  # year as "YYYY"
         "value": float | None,
         "unit": str,
         "obs_status": str,

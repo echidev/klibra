@@ -81,6 +81,6 @@ def record_dataset_cost(t: DatasetCost) -> None:
         level=20,  # logging.INFO
         message=f"per-dataset cost for {t.dataset_id} run {t.run_id}",
         service="klibra-cost-per-dataset",
-        dataset_id=t.dataset_id,  # type: ignore[arg-type]
+        dataset_id=t.dataset_id,
         details=t.to_dict(),
     )

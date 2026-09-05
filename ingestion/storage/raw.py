@@ -22,6 +22,8 @@ import io
 import logging
 from typing import Any, Protocol, runtime_checkable
 
+from ingestion.util.logging import log_event
+
 __all__ = ["RawStorageWriter", "LocalStorageWriter", "CloudStorageWriter"]
 
 logger = logging.getLogger(__name__)
@@ -95,26 +97,53 @@ class RawStorageWriter:
         payload_key = _raw_key(source_id, dataset_id, run_id)
         manifest_key = _raw_key(source_id, dataset_id, run_id, ext="manifest.json")
 
-        client.put_object(
-            self.bucket_name,
-            self._prefixed_key(payload_key),
-            io.BytesIO(payload),
-            content_type="application/octet-stream",
-        )
-        client.put_object(
-            self.bucket_name,
-            self._prefixed_key(manifest_key),
-            io.BytesIO(manifest_json),
-            content_type="application/json",
-        )
-        logger.info(
-            "raw written: source=%s dataset=%s run=%s key=%s",
-            source_id,
-            dataset_id,
-            run_id,
-            payload_key,
+        try:
+            self._assert_absent(client, self._prefixed_key(payload_key))
+            self._assert_absent(client, self._prefixed_key(manifest_key))
+            client.put_object(
+                self.bucket_name,
+                self._prefixed_key(payload_key),
+                io.BytesIO(payload),
+                content_type="application/octet-stream",
+            )
+            client.put_object(
+                self.bucket_name,
+                self._prefixed_key(manifest_key),
+                io.BytesIO(manifest_json),
+                content_type="application/json",
+            )
+        except Exception as exc:
+            log_event(
+                40,
+                "raw write failed",
+                service="klibra-storage",
+                source_id=source_id,
+                dataset_id=dataset_id,
+                details={"run_id": run_id, "error_type": type(exc).__name__},
+            )
+            raise RuntimeError(f"raw write failed for {source_id}/{dataset_id}") from exc
+        log_event(
+            20,
+            "raw payload and manifest written",
+            service="klibra-storage",
+            source_id=source_id,
+            dataset_id=dataset_id,
+            details={"run_id": run_id, "key": payload_key},
         )
         return payload_key
+
+    def _assert_absent(self, client: ObjectClient, object_name: str) -> None:
+        """Use native stat/head operations when the adapter exposes them."""
+        try:
+            if hasattr(client, "stat_object"):
+                client.stat_object(self.bucket_name, object_name)
+            elif hasattr(client, "head_object"):
+                client.head_object(Bucket=self.bucket_name, Key=object_name)
+            else:
+                return
+        except Exception:
+            return
+        raise FileExistsError(f"raw object already exists: {object_name}")
 
 
 class LocalStorageWriter(RawStorageWriter):
@@ -171,7 +200,7 @@ class CloudStorageWriter(RawStorageWriter):
 
     def get_client(self) -> Any:
         try:
-            import boto3  # noqa: PLC0415 — lazy import
+            import boto3  # noqa: PLC0415
         except ImportError as exc:
             raise RuntimeError(
                 "boto3 package is required for CloudStorageWriter. "

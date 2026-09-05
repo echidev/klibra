@@ -140,7 +140,7 @@ def set_context(trace_id: str | None = None, run_id: str | None = None) -> None:
 
 
 @contextmanager
-def trace_context(trace_id: str | None = None, run_id: str | None = None):
+def trace_context(trace_id: str | None = None, run_id: str | None = None) -> Any:
     """Temporarily bind a trace_id/run_id to all log lines in this scope."""
     ctx = _get_context()
     prev_trace, prev_run = ctx.trace_id, ctx.run_id
@@ -227,7 +227,7 @@ class StructuredLogger:
 
 
 @contextmanager
-def timed(logger: StructuredLogger, message: str, **fields: Any):
+def timed(logger: StructuredLogger, message: str, **fields: Any) -> Any:
     """Emit a `duration_ms`-bearing log line at end of block."""
 
     start = time.monotonic()

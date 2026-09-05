@@ -108,14 +108,12 @@ class EcbSdmxConnector(SourceConnectorBase):
             )
         return True
 
-    def extract(
-        self,
-        *,
-        date_range: str | None = None,
-        format: str = "csvdata",
-        last_n_observations: int | None = None,
-    ) -> ExtractionResult:
+    def extract(self, **kwargs: Any) -> ExtractionResult:
         """Fetch one ECB dataflow."""
+
+        date_range = kwargs.get("date_range")
+        format = kwargs.get("format", "csvdata")
+        last_n_observations = kwargs.get("last_n_observations")
 
         params: dict[str, Any] = {"format": format}
         if date_range:
@@ -217,7 +215,7 @@ class EcbSdmxConnector(SourceConnectorBase):
             if obs_value in (None, ""):
                 continue
             try:
-                value = float(obs_value)
+                value = float(str(obs_value))
             except ValueError:
                 continue
             out.append(
