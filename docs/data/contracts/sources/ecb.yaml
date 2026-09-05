@@ -1,0 +1,27 @@
+# Source contract — ecb
+# Aligned to specs/002-release-2-multi-source/contracts/source-contract.schema.json.
+# PRD §10.1 — Class A (no key), SDMX 2.1 REST.
+
+source_id: ecb
+provider: "European Central Bank"
+endpoint: "https://data-api.ecb.europa.eu/service"
+dataset: "Data Portal (SDMX)"
+access_class: "A"
+authentication_model: "none"
+registration_steps:
+  - "No registration required; the SDMX 2.1 endpoint is public."
+rate_limit:
+  requests_per_minute: 10
+  notes: "Respect HTTP 429; supports updatedAfter cursor for incremental."
+terms: "https://www.ecb.europa.eu/ecb/legal/copyright/html/index.en.html"
+historical_coverage: "1999-01-01"
+update_cadence: "DAILY"
+revision_behavior: "FREQUENT"
+contract_stability: "STABLE"
+last_verified_date: "2026-09-04"
+fallback_strategy: "https://data.ecb.europa.eu bulk download (includeHistory)"
+owner: "data-platform@klibra.local"
+live_request_verified: true
+version: "1.0.0"
+exemplar_dataset: "EXR.M.USD.EUR.SP00.A"
+exemplar_url: "https://data-api.ecb.europa.eu/service/data/EXR/M.USD.EUR.SP00.A?format=csvdata"

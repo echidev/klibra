@@ -20,7 +20,7 @@ from typing import Any
 
 from ingestion.util.logging import log_event
 
-__all__ = ["CostTelemetry", "record_cost_signal"]
+__all__ = ["CostTelemetry", "DatasetCost", "record_cost_signal", "record_dataset_cost"]
 
 
 @dataclass(slots=True)
@@ -55,5 +55,32 @@ def record_cost_signal(t: CostTelemetry) -> None:
         level=20,  # logging.INFO
         message=f"cost signal for run {t.run_id}",
         service="klibra-cost",
+        details=t.to_dict(),
+    )
+
+
+@dataclass(slots=True)
+class DatasetCost(CostTelemetry):
+    """Per-dataset cost extension (002-F T056) that routes via OpenMetadata.
+
+    Extends ``CostTelemetry`` with ``dataset_id`` for per-dataset
+    observability on the same OpenMetadata + CloudWatch emit path.
+    """
+
+    dataset_id: str = ""  # additional required field for per-dataset granularity
+
+    def to_dict(self) -> dict[str, Any]:
+        base = super().to_dict()
+        base["dataset_id"] = self.dataset_id
+        return base
+
+
+def record_dataset_cost(t: DatasetCost) -> None:
+    """Record a per-dataset cost sample (FR-F-4, T056)."""
+    log_event(
+        level=20,  # logging.INFO
+        message=f"per-dataset cost for {t.dataset_id} run {t.run_id}",
+        service="klibra-cost-per-dataset",
+        dataset_id=t.dataset_id,  # type: ignore[arg-type]
         details=t.to_dict(),
     )

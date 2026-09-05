@@ -1,0 +1,20 @@
+metric_id: inflation_rate
+version: "1.0.0"
+is_intelligence: false
+name: "inflation rate"
+description: "Consumer price inflation (percent)."
+owner_email: "data-platform@klibra.local"
+grain:
+["worldbank", "fred", "ecb"]
+unit: "percent"
+formula: "(cpi - cpi_prev) / cpi_prev * 100"
+source_policy:
+["worldbank", "fred", "ecb"]
+aggregation_policy: "AVERAGING"
+time_semantics: "monthly"
+quality_requirements:
+  freshness_hours: 720
+  duplicate_rate_max: 0
+lineage_ref: null
+effective_from: "2026-09-04"
+deprecation_status: "ACTIVE"

@@ -1,0 +1,20 @@
+metric_id: market_volatility
+version: "1.0.0"
+is_intelligence: false
+name: "market volatility"
+description: "Realized volatility (percent)."
+owner_email: "data-platform@klibra.local"
+grain:
+["alphavantage", "fred"]
+unit: "percent"
+formula: "std(log_return) * sqrt(252)"
+source_policy:
+["alphavantage", "fred"]
+aggregation_policy: "AVERAGING"
+time_semantics: "daily"
+quality_requirements:
+  freshness_hours: 720
+  duplicate_rate_max: 0
+lineage_ref: null
+effective_from: "2026-09-04"
+deprecation_status: "ACTIVE"

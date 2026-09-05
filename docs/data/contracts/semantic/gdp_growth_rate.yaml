@@ -1,0 +1,20 @@
+metric_id: gdp_growth_rate
+version: "1.0.0"
+is_intelligence: false
+name: "gdp growth rate"
+description: "Annual GDP growth rate (percent)."
+owner_email: "data-platform@klibra.local"
+grain:
+["worldbank", "fred"]
+unit: "percent"
+formula: "(x - x_prev) / x_prev * 100"
+source_policy:
+["worldbank", "fred"]
+aggregation_policy: "AVERAGING"
+time_semantics: "annual"
+quality_requirements:
+  freshness_hours: 720
+  duplicate_rate_max: 0
+lineage_ref: null
+effective_from: "2026-09-04"
+deprecation_status: "ACTIVE"

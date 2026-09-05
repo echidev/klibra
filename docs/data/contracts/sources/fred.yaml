@@ -1,0 +1,32 @@
+# Source contract — fred
+# Aligned to specs/002-release-2-multi-source/contracts/source-contract.schema.json.
+# PRD §10.1 — Class B (self-service personal API key via FRED registration).
+# TDD §13.3 — personal reproducibility gate; live request required for promotion.
+
+source_id: fred
+provider: "FRED (Federal Reserve Bank of St. Louis)"
+endpoint: "https://api.stlouisfed.org/fred"
+dataset: "FRED Web Services — Macro / Interest Rates"
+access_class: "B"
+authentication_model: "api_key"
+auth_env: FRED_API_KEY
+auth_key_pattern: "^[a-z0-9]{32}$"
+rate_limit:
+  requests_per_minute: 120
+  notes: "Personal self-service key via https://fred.stlouisfed.org/docs/api/api_key.html. Max 120 req/min public."
+terms: "https://fred.stlouisfed.org/docs/api/terms_of_use.html"
+historical_coverage: "1929-01-01"
+update_cadence: "DAILY"
+revision_behavior: "PERIODIC"
+contract_stability: "STABLE"
+last_verified_date: "2026-09-04"
+fallback_strategy: "https://fred.stlouisfed.org download CSV + bulk series export"
+owner: "data-platform@klibra.local"
+live_request_verified: true
+version: "1.0.0"
+exemplar_series:
+  - "GDPC1"
+  - "GDP"
+  - "FEDFUNDS"
+  - "DEXUSEU"
+exemplar_notes: "GDPC1 = Real Gross Domestic Product (quarterly, SA); DEXUSEU = USD/Euro FX"

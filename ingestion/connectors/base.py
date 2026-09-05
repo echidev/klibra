@@ -16,6 +16,10 @@ import abc
 import datetime as dt
 import enum
 import hashlib
+import logging
+import os
+import random
+import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
@@ -23,11 +27,23 @@ from typing import Any
 __all__ = [
     "ConnectorCapability",
     "ExtractionResult",
+    "HttpRequest",
+    "HttpResponse",
+    "REQUEST_TIMEOUT_SECONDS",
     "SourceConnectorBase",
     "SourceMetadata",
 ]
 
+logger = logging.getLogger(__name__)
+
 RawPayload = bytes
+
+# Default HTTP request timeout for all source connectors (TDD §13.1).
+# Override per-source if the provider is known to be slow.
+REQUEST_TIMEOUT_SECONDS = float(os.environ.get("KLIBRA_CONNECTOR_TIMEOUT", "30.0"))
+
+# Default User-Agent string identifying KLIBRA to upstream providers.
+DEFAULT_USER_AGENT = "klibra-platform/0.1.0 (+https://github.com/echidev/klibra)"
 
 
 class ConnectorCapability(enum.Enum):
@@ -39,6 +55,126 @@ class ConnectorCapability(enum.Enum):
     BACKFILL = "backfill"
     VERSIONED = "versioned"
     RATE_LIMIT = "rate_limit"
+
+
+@dataclass(frozen=True, slots=True)
+class HttpRequest:
+    """HTTP request descriptor produced by a connector."""
+
+    method: str
+    url: str
+    headers: dict[str, str] = field(default_factory=dict)
+    params: dict[str, Any] = field(default_factory=dict)
+    body: bytes | None = None
+    timeout_seconds: float = REQUEST_TIMEOUT_SECONDS
+
+
+@dataclass(frozen=True, slots=True)
+class HttpResponse:
+    """HTTP response wrapper returned by ``send_request``."""
+
+    status_code: int
+    headers: dict[str, str]
+    body: bytes
+    url: str
+
+
+def send_request(
+    request: HttpRequest,
+    *,
+    max_retries: int = 3,
+    backoff_base_seconds: float = 1.0,
+    backoff_factor: float = 2.0,
+    backoff_jitter_seconds: float = 0.5,
+) -> HttpResponse:
+    """Send an HTTP request with retry, backoff, and jitter (TDD §73).
+
+    Retries on transient errors: connection errors, timeouts, and HTTP 429/5xx.
+    Respects ``Retry-After`` from the upstream if present.
+    """
+    import requests  # local import to keep the base module pure
+
+    headers = dict(request.headers)
+    headers.setdefault("User-Agent", DEFAULT_USER_AGENT)
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            response = requests.request(
+                method=request.method,
+                url=request.url,
+                headers=headers,
+                params=request.params,
+                data=request.body,
+                timeout=request.timeout_seconds,
+            )
+        except requests.RequestException as exc:
+            if attempt > max_retries:
+                logger.error(
+                    "HTTP %s %s failed after %d attempts: %s",
+                    request.method,
+                    request.url,
+                    attempt,
+                    exc,
+                )
+                raise
+            _sleep_with_jitter(
+                attempt, backoff_base_seconds, backoff_factor, backoff_jitter_seconds, exc
+            )
+            continue
+
+        if response.status_code in (429, 500, 502, 503, 504):
+            if attempt > max_retries:
+                response.raise_for_status()
+                break
+            retry_after = response.headers.get("Retry-After")
+            if retry_after:
+                try:
+                    time.sleep(float(retry_after))
+                except ValueError:
+                    _sleep_with_jitter(
+                        attempt,
+                        backoff_base_seconds,
+                        backoff_factor,
+                        backoff_jitter_seconds,
+                        response.status_code,
+                    )
+            else:
+                _sleep_with_jitter(
+                    attempt,
+                    backoff_base_seconds,
+                    backoff_factor,
+                    backoff_jitter_seconds,
+                    response.status_code,
+                )
+            continue
+
+        if response.status_code >= 400:
+            response.raise_for_status()
+
+        return HttpResponse(
+            status_code=response.status_code,
+            headers=dict(response.headers),
+            body=response.content,
+            url=response.url,
+        )
+
+
+def _sleep_with_jitter(
+    attempt: int,
+    base: float,
+    factor: float,
+    jitter: float,
+    reason: Any,
+) -> None:
+    delay = base * (factor ** (attempt - 1)) + random.uniform(0, jitter)
+    logger.warning(
+        "retrying after %.2fs (attempt %d) reason=%r",
+        delay,
+        attempt,
+        reason,
+    )
+    time.sleep(delay)
 
 
 @dataclass(frozen=True, slots=True)

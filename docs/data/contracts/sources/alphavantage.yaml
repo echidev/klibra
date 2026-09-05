@@ -1,0 +1,29 @@
+# Source contract — alphavantage
+# Aligned to specs/002-release-2-multi-source/contracts/source-contract.schema.json.
+# PRD §11.1.3 Market Overview; PRD §10.1 Class B; plan Decision 9.
+
+source_id: alphavantage
+provider: "Alpha Vantage"
+endpoint: "https://www.alphavantage.co/query"
+dataset: "Market / FX / Commodities (Alpha Vantage TIME_SERIES & GLOBAL_QUOTE)"
+access_class: "B"
+authentication_model: "api_key"
+auth_env: ALPHAVANTAGE_API_KEY
+auth_key_pattern: "^[A-Za-z0-9]{16,20}$"
+rate_limit:
+  requests_per_minute: 5
+  notes: "Free tier ~5 req/min / 25 req/day (varies). Self-service at https://www.alphavantage.co/support/#api-key"
+terms: "https://www.alphavantage.co/terms_of_service"
+historical_coverage: "~20 years"
+update_cadence: "DAILY"
+revision_behavior: "NONE"
+contract_stability: "STABLE"
+last_verified_date: "2026-09-04"
+fallback_strategy: "No public fallback; consider CoinGecko for crypto alternative."
+owner: "data-platform@klibra.local"
+live_request_verified: true
+version: "1.0.0"
+exemplar_symbols:
+  - "IBM"
+  - "EURUSD"
+  - "XAU"

@@ -31,6 +31,8 @@ alembic==1.13.2
 # ── Analytical Engine (local validation / transforms) ────────
 # TDD §24 — DuckDB local analytical validation
 duckdb==1.1.2
+# numpy — used by intelligence normalization (z-score/min-max, 002-D)
+numpy==2.1.0
 
 # ── dbt (Silver/Gold SQL transformations) ────────────────────
 # TDD §24 — always used for Silver/Gold

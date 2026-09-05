@@ -1,0 +1,20 @@
+metric_id: policy_rate
+version: "1.0.0"
+is_intelligence: false
+name: "policy rate"
+description: "Central-bank policy rate."
+owner_email: "data-platform@klibra.local"
+grain:
+["fred", "ecb"]
+unit: "percent"
+formula: "rate"
+source_policy:
+["fred", "ecb"]
+aggregation_policy: "LATEST_OBSERVATION"
+time_semantics: "monthly"
+quality_requirements:
+  freshness_hours: 720
+  duplicate_rate_max: 0
+lineage_ref: null
+effective_from: "2026-09-04"
+deprecation_status: "ACTIVE"

@@ -1,0 +1,20 @@
+metric_id: debt_to_gdp
+version: "1.0.0"
+is_intelligence: false
+name: "debt to gdp"
+description: "Public debt as share of GDP."
+owner_email: "data-platform@klibra.local"
+grain:
+["worldbank"]
+unit: "percent"
+formula: "debt / gdp * 100"
+source_policy:
+["worldbank"]
+aggregation_policy: "END_OF_PERIOD"
+time_semantics: "annual"
+quality_requirements:
+  freshness_hours: 720
+  duplicate_rate_max: 0
+lineage_ref: null
+effective_from: "2026-09-04"
+deprecation_status: "ACTIVE"
