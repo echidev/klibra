@@ -62,6 +62,9 @@ def _validate(req: BackfillRequest) -> list[str]:
             errors.append(f"required field missing or empty: {name!r}")
     if req.start_period > req.end_period:
         errors.append("start_period must be <= end_period")
+    parts = req.code_version.split(".")
+    if len(parts) != 3 or not all(p.isdigit() for p in parts):
+        errors.append("code_version must be semver (X.Y.Z)")
     return errors
 
 

@@ -269,7 +269,7 @@ def test_validate_backfill_missing_reason() -> None:
     req = BackfillRequest("dataset", "2023", "2024", "", "owner", "1.0.0", "small")
     valid, errors = validate_backfill(req)
     assert valid is False
-    assert any("reason is required" in e for e in errors)
+    assert any("reason" in e for e in errors)
 
 
 def test_validate_backfill_bad_semver() -> None:

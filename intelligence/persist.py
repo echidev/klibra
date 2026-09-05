@@ -55,11 +55,12 @@ class IntelligenceStore:
         }
         self.scores.append(score_row)
         for component_metric_id, contribution in score.contributions.items():
+            raw_value = score.components.get(component_metric_id, 0.0)
             component_row = {
                 "score_id": score_id,
                 "component_metric_id": component_metric_id,
-                "component_value": score.components.get(component_metric_id, 0.0),
-                "normalized_value": score.components.get(component_metric_id, 0.0),
+                "component_value": raw_value,
+                "normalized_value": raw_value,
                 "weight": score.weights.get(component_metric_id, 0.0),
                 "contribution": contribution,
                 "quality_status": "ACCEPTED",

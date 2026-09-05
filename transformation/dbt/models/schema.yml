@@ -72,3 +72,21 @@ models:
         tests: [not_null]
       - name: lineage_ref
         tests: [not_null]
+
+  - name: gold_country_benchmark
+    columns:
+      - name: entity_id
+        tests: [not_null, unique]
+      - name: gold_published_at
+        tests: [not_null]
+
+  - name: gold_market_overview
+    columns:
+      - name: observation_date
+        tests: [not_null, unique]
+      - name: fx_avg
+        tests: []
+      - name: equity_avg
+        tests: []
+      - name: commodity_avg
+        tests: []

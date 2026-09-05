@@ -118,12 +118,13 @@ class CompositeScorer(ABC):
             payload = str(sorted(inputs.items())).encode()
             input_snapshot_id = str(uuid.uuid5(uuid.NAMESPACE_URL, payload.decode()))
 
-        confidence, coverage = self.coverage_check(inputs)
+        coverage = self.coverage_check(inputs)[1]
         if coverage < 0.0:
             raise ValueError("coverage ratio must be >= 0")
-        if coverage < self.__dict__.get("min_coverage", 0.5):
-            # Return with coverage = confidence, score = None equivalent
-            pass
+        min_coverage = self.__dict__.get("min_coverage", 0.5)
+        from intelligence.util.confidence import confidence as confidence_rescaled
+
+        confidence_val = confidence_rescaled(coverage, declared_min=min_coverage)
 
         normalized = self.normalize(inputs)
         agg = self.aggregate(normalized)
@@ -140,7 +141,7 @@ class CompositeScorer(ABC):
             product_id=self.product_id,
             methodology_version=self.methodology_version,
             score=score,
-            confidence=confidence,
+            confidence=confidence_val,
             coverage_ratio=coverage,
             input_snapshot_id=input_snapshot_id,
             components=dict(normalized),

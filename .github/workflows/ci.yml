@@ -29,7 +29,10 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements.txt
-      - run: pytest -q
+      - run: |-
+          pytest -q --cov=ingestion --cov=transformation --cov=semantic \
+            --cov=intelligence --cov=orchestration --cov-report=term-missing \
+            --cov-fail-under=80
 
   contract-tests:
     name: Contract Tests
@@ -62,8 +65,8 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements.txt
-      - run: cd transformation/dbt && dbt deps || true
-      - run: cd transformation/dbt && dbt build --target dev || true
+      - run: cd transformation/dbt && dbt deps
+      - run: cd transformation/dbt && dbt build --target dev
 
   semantic-metric-tests:
     name: Semantic Metric Tests

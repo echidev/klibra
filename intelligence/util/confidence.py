@@ -1,89 +1,71 @@
-"""Confidence scoring for intelligence layer — PRD §28, TDD §64, 002-D.
+"""Intelligence publish gate — coverage + confidence helpers (003, FR-18, gap G11).
 
-Provides coverage ratio computation and the ``Channel`` class that
-intelligence products use for coverage/confidence derivation.
+Implements the ``coverage_ratio`` and ``confidence`` helpers that the
+publish gate (`coverage_ratio >= min_required_inputs`) delegates to.
 
-Confidence is defined per PRD §28.4: it reflects whether all expected
-component inputs were available and valid. The simplest confidence model
-is ``confidence = coverage_ratio``; this module provides both the simple
-policy and a per-component validation hook.
+Coverage
+    coverage_ratio = len(present ∩ expected) / len(expected)
 
-This module also optionally exposes the ``fact_intelligence_component``
-write helper; the real DB writer lives in ``intelligence/persist.py``.
+    where *present* is the set of ``weights`` keys whose ``inputs``
+    value is not ``None``.
+
+Confidence
+    confidence = min(1.0, coverage / declared_min)
+
+So the gate threshold is a declared minimum coverage; the reported
+confidence is the coverage rescaled by that minimum.
+
+References: plan Decision 7 / FR-17, FR-18 / SC-D-4.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from enum import Enum
-
-__all__ = ["Channel", "compute_confidence", "compute_coverage_ratio"]
+__all__ = ["confidence", "coverage_ratio"]
 
 
-class Channel(str, Enum):
-    """Component channel for confidence scoring."""
-
-    RAW = "raw"
-    NORMALIZED = "normalized"
-    CONTRIBUTION = "contribution"
-
-
-def compute_coverage_ratio(
-    expected_metric_ids: set[str],
+def coverage_ratio(
     inputs: dict[str, float | None],
+    weights: dict[str, float],
 ) -> float:
-    """Compute the coverage ratio (0..1).
+    """Return the coverage ratio for a (inputs, weights) pair.
 
-    ``coverage_ratio`` is ``|present ∩ expected| / |expected|``.
-    A value < 1 means some required inputs were missing or null.
+    Parameters
+    ----------
+    inputs:
+        Dict of ``{metric_id: value}`` for the current scoring period.
+        ``None`` values are treated as absent.
+    weights:
+        Dict of ``{metric_id: weight}`` declaring the scorer's expected
+        components.
+
+    Returns
+    -------
+    ``float`` in ``[0, 1]``; ``1.0`` when every expected input is present
+    with a non-``None`` value, ``0.0`` when none.
     """
-    expected = set(expected_metric_ids)
-    present = {k for k in inputs if inputs[k] is not None}
-    if not expected:
-        return 0.0
-    return len(present & expected) / len(expected)
+
+    if not weights:
+        return 1.0
+    expected = set(weights.keys())
+    present = {k for k in expected if inputs.get(k) is not None}
+    return len(present) / len(expected)
 
 
-def compute_confidence(
-    coverage_ratio: float,
-    *,
-    quality_weights: dict[str, float] | None = None,
-) -> float:
-    """Compute confidence (0..1) from a coverage ratio.
+def confidence(coverage: float, declared_min: float = 0.5) -> float:
+    """Return a capped confidence score rescaled by ``declared_min``.
 
-    In the simple policy ``confidence = coverage_ratio``; if
-    ``quality_weights`` are provided, each present input contributes
-    proportionally to its weight. The default (``None``) uses uniform
-    weighting.
+    Parameters
+    ----------
+    coverage:
+        The ``coverage_ratio`` for the current run.
+    declared_min:
+        The per-product ``min_required_inputs`` threshold (default ``0.5``).
+
+    Returns
+    -------
+    ``float`` in ``[0, 1]``; capped at ``1.0``.
     """
-    if coverage_ratio == 0.0:
-        return 0.0
-    if quality_weights is None:
-        return coverage_ratio
-    # Weight-aware confidence: weighted coverage
-    sum(quality_weights.values()) or 1.0
-    avg = coverage_ratio * (sum(sorted(quality_weights.values())) / max(1, len(quality_weights)))
-    # Clamp to 0..1
-    return max(0.0, min(1.0, avg if avg else coverage_ratio))
 
-
-@dataclass(frozen=True, slots=True)
-class ConfidenceScore:
-    coverage_ratio: float
-    confidence: float
-
-    def is_publishable(self, min_coverage: float = 0.5) -> bool:
-        return self.coverage_ratio >= min_coverage
-
-    def band(self) -> str:
-        if self.confidence < 0.33:
-            return "LOW"
-        if self.confidence < 0.66:
-            return "MEDIUM"
-        return "HIGH"
-
-
-@dataclass(frozen=True, slots=True)
-class ConfidenceConfig:
-    min_coverage: float = 0.5
-    weights: dict[str, float] | None = None
+    if declared_min <= 0:
+        return 1.0
+    return min(1.0, coverage / declared_min)

@@ -135,12 +135,114 @@ def klibra_pipeline() -> None:
 
         return build_gold(silver_passed)
 
+    @task(task_id="compute_intelligence")
+    def compute_intelligence(gold_batch: dict[str, Any]) -> dict[str, Any]:
+        """Compute composite intelligence products from Gold data.
+
+        G10: five scorers (economic_momentum, inflation_pressure,
+        market_stress, country_risk, global_liquidity).
+
+        Inputs for each scorer are drawn from the Gold layer per
+        TDD §25 and plan Decision 6: intelligence reads from Gold +
+        Silver. Each scorer's ``weights`` keys dictate which metric
+        keys are read; missing inputs are allowed (coverage gate).
+        Persisted via ``intelligence.persist.persist_score``.
+
+        Returns
+        -------
+        dict
+            ``{"status": "INTELLIGENCE_COMPUTED", "scores": [...], "intelligence": {product_id: persisted_row}}``
+        """
+        from intelligence.persist import persist_score
+        from intelligence.products.country_risk import CountryRiskScorer
+        from intelligence.products.economic_momentum import EconomicMomentumScorer
+        from intelligence.products.global_liquidity import GlobalLiquidityScorer
+        from intelligence.products.inflation_pressure import InflationPressureScorer
+        from intelligence.products.market_stress import MarketStressScorer
+
+        records: list[dict[str, Any]] = []
+        for k in ("gold_macro_indicators", "gold_country_benchmark", "gold_market_overview"):
+            for row in gold_batch.get(k, {}).get("records", []) or gold_batch.get("records", []):
+                records.append(row)
+        # Also accept flat record list on gold_batch (fallback for mocks)
+        if not records and isinstance(gold_batch.get("records"), list):
+            records = gold_batch["records"]
+
+        # Group by entity_id as a minimal Gold → intelligence input shape.
+        # Fallback when gold has no entity: use a single entity "all".
+        by_entity: dict[str, list[dict[str, Any]]] = {}
+        for row in records or []:
+            entity = (row.get("entity_id") or row.get("observation_id", "all")).split(":")[0]
+            by_entity.setdefault(entity or "all", []).append(row)
+
+        scorer_specs: list[tuple[type, str]] = [
+            (EconomicMomentumScorer, "intelligence_economic_momentum"),
+            (InflationPressureScorer, "intelligence_inflation_pressure"),
+            (MarketStressScorer, "intelligence_market_stress"),
+            (CountryRiskScorer, "intelligence_country_risk"),
+            (GlobalLiquidityScorer, "intelligence_global_liquidity"),
+        ]
+
+        intelligence: dict[str, Any] = {}
+        scores: list[dict[str, Any]] = []
+        errors: list[str] = []
+        for scorer_cls, product_id in scorer_specs:
+            try:
+                scorer = scorer_cls()
+            except Exception as exc:
+                errors.append(f"{product_id}: instantiate failed: {exc}")
+                continue
+            for entity_id, entity_records in (by_entity or {"all": []}).items():
+                inputs: dict[str, float] = {}
+                for k in scorer.weights:
+                    # Prefer metric match in gold; fall back to recent value.
+                    for row in entity_records:
+                        if row.get("metric_id") == k and row.get("value") is not None:
+                            inputs[k] = float(row["value"])
+                            break
+                score_obj = scorer.score(inputs)
+                persist_quality = (
+                    "QUARANTINED"
+                    if score_obj.coverage_ratio < scorer.__dict__.get("min_coverage", 0.5)
+                    else "ACCEPTED"
+                )
+                persisted = persist_score(
+                    score_obj,
+                    entity_id=entity_id,
+                    observation_period=records[0].get("observation_date", "1970-01-01")
+                    if records
+                    else "1970-01-01",
+                    quality_status=persist_quality,
+                )
+                intelligence.setdefault(product_id, []).append(persisted)
+                scores.append(
+                    {"product_id": product_id, "entity_id": entity_id, "score": persisted}
+                )
+
+        return {
+            "status": "INTELLIGENCE_COMPUTED",
+            "scores": scores,
+            "intelligence": intelligence,
+            "gold_batch": gold_batch,
+            "errors": errors,
+        }
+
     @task(task_id="publish")
-    def publish(gold_batch: dict[str, Any]) -> dict[str, Any]:
-        """Make Gold products discoverable to consumers."""
+    def publish(intelligence_batch: dict[str, Any]) -> dict[str, Any]:
+        """Make Gold + Intelligence discoverable to consumers.
+
+        Accepts the ``compute_intelligence`` output (or a raw Gold batch
+        when intelligence is skipped); forwards to ``publish_gold`` on the
+        embedded ``gold_batch``.
+        """
         from orchestration.tasks import publish_gold
 
-        return publish_gold(gold_batch)
+        gold_batch = intelligence_batch.get("gold_batch", intelligence_batch)
+        if not gold_batch.get("records") and not gold_batch.get("products"):
+            gold_batch = intelligence_batch.get("gold_batch") or intelligence_batch
+        publish_result = publish_gold(gold_batch)  # type: ignore[arg-type]
+        publish_result["intelligence"] = intelligence_batch.get("intelligence", {})
+        return publish_result
 
     @task(task_id="notify")
     def notify(publish_result: dict[str, Any]) -> None:
@@ -177,7 +279,8 @@ def klibra_pipeline() -> None:
     si = silver(qg)
     sq = silver_quality(si)
     go = gold(sq)
-    pu = publish(go)
+    ci = compute_intelligence(go)
+    pu = publish(ci)
     notify(pu)
 
     # Terminal catch-all in case notify is bypassed.

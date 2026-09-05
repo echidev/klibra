@@ -32,7 +32,9 @@ sources:
     dataset: "Data Portal (SDMX)"
     access_class: "A"
     auth_model: "none"
-    endpoint: "https://sdw-wsrest.ecb.europa.eu/service"
+    endpoint: "https://data-api.ecb.europa.eu/service"
+    fallback_endpoints:
+      - "https://sdw-wsrest.ecb.europa.eu/service"
     rate_limit:
       requests_per_minute: 10
       notes: "Respect HTTP 429; supports updatedAfter cursor."
