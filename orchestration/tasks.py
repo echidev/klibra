@@ -14,9 +14,10 @@ from pathlib import Path
 from typing import Any
 
 from ingestion.connectors.alphavantage import AlphaVantageConnector
-from ingestion.connectors.fred import FredConnector
+from ingestion.connectors.base import SourceConnectorBase
 from ingestion.connectors.ecb import EcbSdmxConnector
-# existing imports ...
+from ingestion.connectors.fred import FredConnector
+from ingestion.connectors.worldbank import WorldBankConnector
 from ingestion.storage.raw import ObjectClient, RawStorageWriter
 from ingestion.util.logging import log_event
 from ingestion.util.manifest import build_manifest, manifest_to_json
@@ -32,13 +33,14 @@ def _default_connector(dataset: dict[str, Any]) -> SourceConnectorBase:
     if source_id == "worldbank":
         return WorldBankConnector(dataset_id=dataset["dataset_id"])
     if source_id == "alphavantage":
-        return AlphaVantageConnector(symbol=dataset["dataset_id"], api_key="${ALPHAVANTAGE_API_KEY}")
+        return AlphaVantageConnector(
+            symbol=dataset["dataset_id"], api_key="${ALPHAVANTAGE_API_KEY}"
+        )
     if source_id == "fred":
         return FredConnector(series_id=dataset["dataset_id"], api_key="${FRED_API_KEY}")
     if source_id == "ecb":
         return EcbSdmxConnector(dataset_id=dataset["dataset_id"])
     raise ValueError(f"unsupported source connector: {source_id}")
-
 
 
 def discover_datasets(catalog_path: str = "docs/data/source_catalog.yaml") -> dict[str, Any]:

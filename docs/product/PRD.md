@@ -1014,14 +1014,13 @@ Success shall be measured across four dimensions.
 
 - World Bank.
 - ECB.
-- One self-service-key source from FRED/Alpha Vantage/CoinGecko.
+- FRED (the selected self-service-key source for R1; Alpha Vantage and CoinGecko remain eligible as additional market sources in R2 per the "one of" gate — see §11.1.3).
 - Raw, Bronze, Silver, Gold.
 - Core quality gates.
 
 ## Release 2 — Multi-Source Intelligence
 
-- IMF.
-- Additional market source.
+- Alpha Vantage — the R2 additional market source (PRD §11.1.3 `gold_market_overview`); IMF remains a Class C catalog entry until its portal/account path is verified live (connector code deferred; see TDD §13.3).
 - Cross-source reconciliation.
 - Country benchmark.
 - Semantic metrics.
