@@ -26,6 +26,27 @@ PAYLOAD = (
 )
 
 
+class _InMemoryObjectClient:
+    """Minimal in-memory ObjectClient for CI (no live MinIO/S3)."""
+
+    def __init__(self) -> None:
+        self.objects: set[str] = set()
+
+    def put_object(self, bucket_name, object_name, data, content_type=None):
+        self.objects.add(object_name)
+        return None
+
+    def stat_object(self, bucket_name, object_name):
+        if object_name not in self.objects:
+            raise FileNotFoundError(object_name)
+        return object_name
+
+    def head_object(self, bucket=None, key=None, **kwargs):  # noqa: N803 - boto3 casing
+        if key not in self.objects:
+            raise FileNotFoundError(key)
+        return {"Bucket": bucket, "Key": key}
+
+
 class FakeConnector:
     run_id = "integration-run"
 
@@ -50,10 +71,15 @@ class FakeConnector:
         )
 
 
-def test_raw_to_gold_pipeline() -> None:
+def test_raw_to_gold_pipeline_in_memory() -> None:
+    """Spec 004 (T011): in-memory ObjectClient keeps the test green in CI."""
+    client = _InMemoryObjectClient()
+    writer = RawStorageWriter("test")
     extracted = run_extraction(
         {"datasets": [{"source_id": "worldbank", "dataset_id": "NY.GDP.MKTP.KD.ZG"}]},
         connector_factory=lambda _definition: FakeConnector(),
+        storage_writer=writer,
+        storage_client=client,
     )
     raw_validated = validate_raw(extracted)
     bronze = build_bronze(raw_validated)

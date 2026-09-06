@@ -11,6 +11,7 @@ Required fields per TDD §17:
 from __future__ import annotations
 
 import datetime as dt
+import os
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
@@ -77,6 +78,30 @@ class BackfillOrchestrator:
 
     def __init__(self) -> None:
         self._history: list[BackfillRequest] = []
+
+    @classmethod
+    def validate(cls, req: BackfillRequest) -> tuple[bool, list[str]]:
+        """Return ``(is_valid, errors)`` for a backfill request (FR-008).
+
+        Extends :func:`_validate` with max-range enforcement defaulting to
+        365 days, overridable via ``KLIBRA_BACKFILL_MAX_RANGE_DAYS``.
+        """
+        errors = _validate(req)
+        if errors:
+            return (False, errors)
+        try:
+            start = dt.date.fromisoformat(req.start_period)
+            end = dt.date.fromisoformat(req.end_period)
+        except ValueError:
+            return (False, ["start_period/end_period must be ISO dates (YYYY-MM-DD)"])
+        max_days_str = os.environ.get("KLIBRA_BACKFILL_MAX_RANGE_DAYS", "365")
+        try:
+            max_days = int(max_days_str)
+        except ValueError:
+            max_days = 365
+        if (end - start).days > max_days:
+            return (False, [f"date range exceeds {max_days} days (KLIBRA_BACKFILL_MAX_RANGE_DAYS)"])
+        return (True, [])
 
     def submit(self, req: BackfillRequest) -> dict[str, Any]:
         """Validate and queue a backfill. Returns an idempotency key + the request."""

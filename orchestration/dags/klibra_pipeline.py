@@ -88,10 +88,13 @@ def klibra_pipeline() -> None:
 
     @task(task_id="extract")
     def extract(dataset: dict[str, Any]) -> dict[str, Any]:
-        """Run connectors and persist raw payloads."""
+        """Run connectors and persist raw payloads to mandatory storage."""
         from orchestration.tasks import run_extraction
+        from orchestration.util.storage import make_storage_client, make_storage_writer
 
-        return run_extraction(dataset)
+        writer = make_storage_writer()
+        client = make_storage_client()
+        return run_extraction(dataset, storage_writer=writer, storage_client=client)
 
     @task(task_id="raw_validation")
     def raw_validation(extraction: dict[str, Any]) -> dict[str, Any]:
@@ -113,6 +116,33 @@ def klibra_pipeline() -> None:
         from orchestration.tasks import apply_quality_gate
 
         return apply_quality_gate(bronze_batch)
+
+    @task(task_id="backfill")
+    def backfill(request: dict[str, Any]) -> dict[str, Any]:
+        """Submit a BackfillRequest via BackfillOrchestrator (Spec 004 T037)."""
+        import logging
+
+        from orchestration.operators.backfill_orchestrator import (
+            BackfillOrchestrator,
+            BackfillRequest,
+        )
+
+        try:
+            req = BackfillRequest(**request)
+        except TypeError as exc:
+            logging.warning("backfill: invalid request: %s", exc)
+            return {"status": "REJECTED", "errors": [f"invalid request: {exc}"]}
+        is_valid, errors = BackfillOrchestrator.validate(req)
+        if not is_valid:
+            logging.warning("backfill: failed_validation run_id=%s errors=%s", req.run_id, errors)
+            return {"status": "REJECTED", "errors": errors}
+        receipt = BackfillOrchestrator().submit(req)
+        logging.info(
+            "backfill: submitted run_id=%s idempotency_key=%s",
+            receipt.get("run_id"),
+            receipt.get("idempotency_key"),
+        )
+        return {"status": "SUBMITTED", **receipt}
 
     @task(task_id="silver")
     def silver(quality_passed: dict[str, Any]) -> dict[str, Any]:
@@ -209,9 +239,11 @@ def klibra_pipeline() -> None:
                 persisted = persist_score(
                     score_obj,
                     entity_id=entity_id,
-                    observation_period=records[0].get("observation_date", "1970-01-01")
-                    if records
-                    else "1970-01-01",
+                    observation_period=(
+                        records[0].get("observation_date", "1970-01-01")
+                        if records
+                        else "1970-01-01"
+                    ),
                     quality_status=persist_quality,
                 )
                 intelligence.setdefault(product_id, []).append(persisted)

@@ -1,11 +1,58 @@
-"""Pipeline-plane metrics — TDD §67.1, plan.md."""
+"""Pipeline-plane metrics — TDD §67.1, plan.md, Spec 004 remediation.
+
+Module-level counters per plan §Monitoring for observability:
+- ``storage_writes_total``
+- ``quarantine_records_total``
+- ``gold_row_counts_correctness_total``
+"""
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass
 from datetime import datetime
 
-__all__ = ["PipelineRunMetrics"]
+__all__ = [
+    "PipelineRunMetrics",
+    "Counter",
+    "storage_writes_total",
+    "quarantine_records_total",
+    "gold_row_counts_correctness_total",
+]
+
+
+class Counter:
+    """Minimal thread-safe counter for pipeline metrics (no external deps)."""
+
+    def __init__(self) -> None:
+        self._value: int = 0
+        self._lock = threading.Lock()
+
+    def inc(self, amount: int = 1) -> None:
+        with self._lock:
+            self._value += amount
+
+    def dec(self, amount: int = 1) -> None:
+        with self._lock:
+            self._value -= amount
+
+    @property
+    def value(self) -> int:
+        with self._lock:
+            return self._value
+
+    def reset(self) -> None:
+        with self._lock:
+            self._value = 0
+
+    def __repr__(self) -> str:
+        return f"Counter({self.value})"
+
+
+# ── Module-level counters (plan §Monitoring) ─────────────────────────────
+storage_writes_total = Counter()
+quarantine_records_total = Counter()
+gold_row_counts_correctness_total = Counter()
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,0 +1,23 @@
+# docs/data/contracts/sources/coingecko.yaml
+# Spec 004 T050 — AGENTS.md §2.2
+name: coingecko
+display_name: CoinGecko Demo API
+access_class: B
+auth_env: COINGECKO_DEMO_API_KEY
+endpoint: https://api.coingecko.com/api/v3
+contract_expectations:
+  - path: /simple/price
+    method: GET
+    params:
+      ids: string
+      vs_currencies: usd
+      include_market_cap: bool
+      include_24hr_vol: bool
+      include_24hr_change: bool
+      include_last_updated_at: bool
+    response: json
+    rate_limit: 30/min (Demo)
+    schema: dict[coin_id -> {usd, usd_market_cap, usd_24h_vol, usd_24h_change, last_updated_at}]
+bronze_contract: transformation/bronze/coingecko.build_bronze_records
+last_verified_date: 2026-09-06
+owner: data-platform@klibra.local

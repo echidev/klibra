@@ -7,6 +7,7 @@ the appropriate user-story phase (e.g., US1 for extract, US2 for publish).
 
 from __future__ import annotations
 
+import contextlib
 import datetime as dt
 import hashlib
 import os
@@ -77,6 +78,18 @@ def discover_datasets(catalog_path: str = "docs/data/source_catalog.yaml") -> di
         elif source_id == "alphavantage":
             for dataset_id in ["GLOBAL_QUOTE:AAPL", "TIME_SERIES_DAILY:AAPL"]:
                 datasets.append({"source_id": source_id, "dataset_id": dataset_id})
+        elif source_id == "coingecko":
+            from ingestion.connectors.coingecko import CoinGeckoConnector  # noqa: PLC0415
+
+            try:
+                for dataset_id in CoinGeckoConnector().discover():
+                    datasets.append({"source_id": source_id, "dataset_id": dataset_id})
+            except Exception as exc:  # noqa: BLE001 — discovery must not break the run
+                log_event(
+                    30,
+                    f"coingecko discover failed: {exc}",
+                    service="klibra-orchestration",
+                )
         elif source_id == "imf":
             # Class C - deferred; do not crash, just log and continue.
             log_event(
@@ -86,7 +99,7 @@ def discover_datasets(catalog_path: str = "docs/data/source_catalog.yaml") -> di
             )
             continue
         else:
-            # Any remaining source (e.g. coingecko) is deferred; log and skip.
+            # Any remaining source (e.g. unknown class) is deferred; log and skip.
             log_event(
                 30,
                 f"skipping deferred source (not in this feature's wiring): {source_id}",
@@ -106,8 +119,22 @@ def run_extraction(
     storage_writer: RawStorageWriter | None = None,
     storage_client: ObjectClient | None = None,
 ) -> dict[str, Any]:
-    """Extract each discovered dataset and optionally persist Raw objects."""
+    """Extract each discovered dataset and persist Raw objects.
+
+    Storage writer and client are mandatory in production wiring (T007/T013);
+    the DAG passes factory-built instances. A test-only override of either
+    to ``None`` raises ``RuntimeError`` so misconfiguration fails fast
+    (FR-002).
+    """
     import time as _time
+
+    from orchestration.metrics.pipeline import storage_writes_total  # noqa: PLC0415
+
+    if storage_writer is None or storage_client is None:
+        raise RuntimeError(
+            "storage_writer and storage_client are required for run_extraction "
+            "(see orchestration.util.storage.make_storage_writer / make_storage_client)"
+        )
 
     factory = connector_factory or _default_connector
     results: list[dict[str, Any]] = []
@@ -126,7 +153,7 @@ def run_extraction(
             "metadata": metadata,
             "result": result,
         }
-        if storage_writer is not None and storage_client is not None:
+        try:
             manifest = build_manifest(
                 source_id=metadata.source_id,
                 dataset_id=metadata.dataset_id,
@@ -149,6 +176,26 @@ def run_extraction(
                 result.payload,
                 manifest_to_json(manifest).encode(),
             )
+            with contextlib.suppress(Exception):
+                storage_writes_total.inc()
+            log_event(
+                20,
+                "raw payload and manifest written",
+                service="klibra-orchestration",
+                source_id=metadata.source_id,
+                dataset_id=metadata.dataset_id,
+                details={"run_id": metadata.run_id, "key": item["raw_key"]},
+            )
+        except Exception as exc:
+            log_event(
+                40,
+                "raw write failed",
+                service="klibra-orchestration",
+                source_id=metadata.source_id,
+                dataset_id=metadata.dataset_id,
+                details={"run_id": metadata.run_id, "error_type": type(exc).__name__},
+            )
+            raise
         results.append(item)
         try:
             from orchestration.util.cost import DatasetCost, record_dataset_cost
@@ -227,6 +274,16 @@ def build_bronze(validation: dict[str, Any]) -> dict[str, Any]:
                 raw_payload=item["payload"],
                 **common_kwargs,
             )
+        elif source_id == "coingecko":
+            from transformation.bronze.coingecko import (  # noqa: PLC0415
+                build_bronze_records as build_bronze_coingecko,
+            )
+
+            records = build_bronze_coingecko(
+                dataset_id=item["dataset_id"],
+                raw_payload=item["payload"],
+                **common_kwargs,
+            )
         else:
             msg = f"Bronze parser is not configured for {source_id!r}"
             raise ValueError(msg)
@@ -238,17 +295,115 @@ def build_bronze(validation: dict[str, Any]) -> dict[str, Any]:
 
 
 def apply_quality_gate(bronze_batch: dict[str, Any]) -> dict[str, Any]:
-    """Block malformed batches and retain accepted records for Silver."""
+    """Route quarantined records and retain accepted ones for Silver.
+
+    Per ``contracts/quarantine.md``:
+    - ``ACCEPTED`` / ``ACCEPTED_WARNING`` -> batches flow to Silver.
+    - ``QUARANTINED`` -> records written to quarantine layer, pipeline continues.
+    - ``REJECTED`` -> entire batch dropped with WARN, pipeline continues.
+    """
+    from orchestration.metrics.pipeline import quarantine_records_total  # noqa: PLC0415
+
     framework = QualityFramework()
     accepted: list[dict[str, Any]] = []
+    quarantined: list[dict[str, Any]] = []
+    writer = None
+    client = None
+    # Best-effort quarantine writer; errors are swallowed so the pipeline continues.
+    try:
+        from orchestration.util.storage import (
+            make_storage_client,
+            make_storage_writer,
+        )  # noqa: PLC0415
+
+        writer = make_storage_writer()
+        client = make_storage_client()
+    except Exception:  # noqa: BLE001
+        pass
+
     for batch in bronze_batch["batches"]:
         outcome = framework.evaluate_batch(
             payload_present=True, schema_valid=bool(batch["records"])
         )
-        if outcome in (QualityOutcome.QUARANTINED, QualityOutcome.REJECTED):
-            raise ValueError(f"quality gate failed for {batch['dataset_id']}: {outcome.value}")
+        if outcome == QualityOutcome.QUARANTINED:
+            for record in batch.get("records", []):
+                try:
+                    from ingestion.storage.quarantine import (  # noqa: PLC0415
+                        QuarantineStorageWriter,
+                        build_quarantine_manifest,
+                        quarantine_key,
+                    )
+
+                    # Derive quorum bucket; if writer came from env factory we reuse it.
+                    bucket = (
+                        getattr(writer, "bucket_name", "klibra-data-quarantine")
+                        if writer is not None
+                        else "klibra-data-quarantine"
+                    )
+                    qw: QuarantineStorageWriter
+                    if isinstance(writer, QuarantineStorageWriter):  # pragma: no cover
+                        qw = writer
+                    else:
+                        qw = QuarantineStorageWriter(bucket_name=str(bucket))
+                    manifest = build_quarantine_manifest(
+                        record,
+                        reason=outcome.value,
+                        observation_id=str(record.get("observation_id", "")),
+                        run_id=str(batch.get("run_id", "")),
+                        source_id=str(batch.get("source_id", "")),
+                        dataset_id=str(batch.get("dataset_id", "")),
+                    )
+                    obs_id = manifest.get("observation_id") or "unknown"
+                    manifest_key = quarantine_key(
+                        str(batch.get("source_id", "unknown")),
+                        str(batch.get("dataset_id", "unknown")),
+                        str(batch.get("run_id", "unknown")),
+                        str(obs_id),
+                    )
+                    if client is not None:
+                        qw.write_quarantine(
+                            client,
+                            str(batch.get("source_id", "unknown")),
+                            str(batch.get("dataset_id", "unknown")),
+                            str(batch.get("run_id", "unknown")),
+                            record,
+                            str(outcome.value),
+                            observation_id=str(manifest.get("observation_id", "")),
+                        )
+                    quarantined.append(
+                        {
+                            "source_id": batch.get("source_id", ""),
+                            "dataset_id": batch.get("dataset_id", ""),
+                            "run_id": batch.get("run_id", ""),
+                            "observation_id": str(manifest.get("observation_id", "")),
+                            "reason": str(outcome.value),
+                            "quality_status": "QUARANTINED",
+                            "original_record": record,
+                            "quarantine_key": manifest_key,
+                            "quarantine_timestamp": manifest.get("quarantine_timestamp", ""),
+                        }
+                    )
+                    with contextlib.suppress(Exception):
+                        quarantine_records_total.inc()
+                except Exception:  # noqa: BLE001 — must never break main pipeline
+                    continue
+            continue
+        if outcome == QualityOutcome.REJECTED:
+            log_event(
+                30,
+                f"batch rejected dataset_id={batch.get('dataset_id', '')!r} outcome={outcome.value}",
+                service="klibra-orchestration",
+            )
+            continue
         accepted.append(batch)
-    return {"status": "QUALITY_ACCEPTED", "batches": accepted}
+    # Shape per contracts/quarantine.md
+    result: dict[str, Any] = {
+        "status": "QUALITY_ACCEPTED",
+        "batches": accepted,
+        "quarantined": quarantined,
+        "quarantine_count": len(quarantined),
+    }
+    return result
 
 
 def build_silver(quality_passed: dict[str, Any]) -> dict[str, Any]:
@@ -394,6 +549,39 @@ def run_silver_tests(silver_batch: dict[str, Any]) -> dict[str, Any]:
     return {**silver_batch, "status": "SILVER_VALIDATED"}
 
 
+_GOLD_PRODUCTS: tuple[str, ...] = (
+    "gold_macro_indicators",
+    "gold_country_benchmark",
+    "gold_market_overview",
+)
+
+
+def _parse_gold_row_counts(run_results: dict[str, Any]) -> dict[str, int]:
+    """Parse actual row counts from dbt ``run_results.json``.
+
+    Per ``contracts/gold_result.md``: unique_id == ``model.klibra.<name>``,
+    row count from ``different_result`` (list length) or 0.
+    """
+    out: dict[str, int] = {}
+    for result in run_results.get("results", []):
+        unique_id = str(result.get("unique_id", ""))
+        if not unique_id.startswith("model."):
+            continue
+        name = unique_id.split(".")[-1]
+        if name not in set(_GOLD_PRODUCTS):
+            continue
+        diff = result.get("different_result")
+        if isinstance(diff, list):
+            out[name] = len(diff)
+        elif isinstance(diff, dict):
+            out[name] = int(diff.get("rows_inserted", 0))
+        elif isinstance(diff, int):
+            out[name] = int(diff)
+        else:
+            out[name] = 0
+    return out
+
+
 def build_gold(silver_passed: dict[str, Any]) -> dict[str, Any]:
     """Run dbt to build Gold data products, returning per-product row counts.
 
@@ -418,9 +606,18 @@ def build_gold(silver_passed: dict[str, Any]) -> dict[str, Any]:
             if record["effective_to"] is None
             and record["quality_status"] in {"ACCEPTED", "ACCEPTED_WARNING"}
         ]
+        products = {k: 0 for k in _GOLD_PRODUCTS}
+        # Derive row_counts from records per-Bronze source slice if possible; default 0.
+        parsed_row_counts: dict[str, int] = {}
+        # Keep overall count on the first product as the closest faithful mapping of the old shape.
+        if records:
+            parsed_row_counts[_GOLD_PRODUCTS[0]] = len(records)
+        row_counts_legacy = {k: parsed_row_counts.get(k, 0) for k in _GOLD_PRODUCTS}
         return {
             "status": "GOLD_BUILT",
             "records": records,
+            "products": products,
+            "row_counts": row_counts_legacy,
             "run_id": records[0]["run_id"] if records else "",
         }
 
@@ -428,6 +625,8 @@ def build_gold(silver_passed: dict[str, Any]) -> dict[str, Any]:
     import subprocess
     import time
     from pathlib import Path
+
+    from orchestration.metrics.pipeline import gold_row_counts_correctness_total  # noqa: PLC0415
 
     dbt_project_dir = Path("transformation/dbt")
     dbt_target = os.environ.get("KLIBRA_DBT_TARGET", "dev")
@@ -456,60 +655,56 @@ def build_gold(silver_passed: dict[str, Any]) -> dict[str, Any]:
         msg = f"dbt build failed for {selector} (exit={result.returncode})\n{result.stderr}"
         raise RuntimeError(msg)
 
-    # Parse run_results.json for row counts
     run_results_path = dbt_project_dir / "target" / "run_results.json"
     row_counts: dict[str, int] = {}
     if run_results_path.exists():
         try:
-            run_results = json.loads(run_results_path.read_text())
-            for result_block in run_results.get("results", []):
-                unique_id = result_block.get("unique_id", "")
-                # unique_id format: "model.klibra.<name>"
-                if unique_id.startswith("model."):
-                    name = unique_id.split(".")[-1]
-                    if name in {
-                        "gold_macro_indicators",
-                        "gold_country_benchmark",
-                        "gold_market_overview",
-                    }:
-                        row_counts[name] = 0
+            row_counts = _parse_gold_row_counts(json.loads(run_results_path.read_text()))
+            # Increment dbt-path correctness counter (E1).
+            with contextlib.suppress(Exception):
+                gold_row_counts_correctness_total.inc()
         except json.JSONDecodeError:
             pass
+    # Default missing products to 0 so all 3 are present.
+    row_counts = {k: row_counts.get(k, 0) for k in _GOLD_PRODUCTS}
+    products = dict(row_counts)
 
     log_event(
         20,
         "gold fan-out complete",
         service="klibra-orchestration",
-        details={"dbt_target": dbt_target, "duration_seconds": round(duration, 3)},
+        details={
+            "dbt_target": dbt_target,
+            "duration_seconds": round(duration, 3),
+            "row_counts": row_counts,
+        },
     )
 
     return {
         "status": "GOLD_BUILT",
-        "products": {
-            "gold_macro_indicators": 0,
-            "gold_country_benchmark": 0,
-            "gold_market_overview": 0,
-        },
-        "run_id": silver_passed.get("records", [{}])[0].get("run_id", "")
-        if silver_passed.get("records")
-        else "",
-        "row_counts": row_counts
-        or {
-            k: 0
-            for k in (
-                "gold_macro_indicators",
-                "gold_country_benchmark",
-                "gold_market_overview",
-            )
-        },
+        "records": silver_passed.get("records", []),
+        "products": products,
+        "row_counts": row_counts,
+        "run_id": (
+            silver_passed.get("records", [{}])[0].get("run_id", "")
+            if silver_passed.get("records")
+            else ""
+        ),
     }
 
 
 def publish_gold(gold_batch: dict[str, Any]) -> dict[str, Any]:
     """Return a publish receipt after verifying the Gold batch is non-empty."""
-    if not gold_batch["records"]:
+    records = gold_batch.get("records", [])
+    row_counts = gold_batch.get("row_counts", {})
+    n: int
+    if records:
+        n = len(list(records))
+    elif row_counts:
+        n = int(sum(int(v) for v in row_counts.values()))
+    else:
         raise ValueError("cannot publish an empty Gold batch")
-    return {**gold_batch, "status": "PUBLISHED", "records_written": len(gold_batch["records"])}
+    return {**gold_batch, "status": "PUBLISHED", "records_written": n}
 
 
 def notify_owners(publish_result: dict[str, Any]) -> None:

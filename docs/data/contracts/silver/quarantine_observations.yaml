@@ -1,0 +1,38 @@
+# docs/data/contracts/silver/quarantine_observations.yaml
+# Spec 004 T051 — AGENTS.md §2.2
+name: quarantine_observations
+layer: silver
+prefix: quarantine/
+path_pattern: "quarantine/source={source_id}/dataset={dataset_id}/run_id={run_id}/{observation_id}.json"
+schema:
+  - name: source_id
+    type: string
+    required: true
+  - name: dataset_id
+    type: string
+    required: true
+  - name: run_id
+    type: string
+    required: true
+  - name: observation_id
+    type: string
+    required: true
+  - name: quarantine_reason
+    type: string
+    required: true
+  - name: quality_status
+    type: string
+    enum: [QUARANTINED]
+  - name: original_record
+    type: object
+    required: true
+  - name: quarantine_timestamp
+    type: datetime
+    format: ISO8601
+    required: true
+contract_tests:
+  - tests/integration/test_quarantine_routing.py
+  - tests/unit/test_quarantine_writer.py
+owner: data-platform@klibra.local
+version: "0.1.0"
+FAIL_on_mismatch: block
