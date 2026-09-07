@@ -1,7 +1,9 @@
 """Storage factory — env-driven MinIO/boto3 selection.
 
 TDD §6, ADR-001. Single primary driver key: ``KLIBRA_ENV``.
-``development`` -> MinIO via ``MINIO_*``; otherwise boto3 via ``AWS_*``.
+``development`` -> MinIO via boto3 with ``endpoint_url``; otherwise boto3
+against AWS S3. Both paths return a :class:`boto3.client.S3` so downstream
+code (raw + quarantine writers) uses one keyword-only ``put_object`` form.
 """
 
 from __future__ import annotations
@@ -60,12 +62,14 @@ def make_storage_writer() -> RawStorageWriter:
 def make_storage_client() -> Any:
     """Build the underlying object-storage client for the current environment.
 
-    Mirrors :func:`make_storage_writer` so the DAG can pass the same client
-    into both the raw writer and the quarantine writer.
+    Unified to :class:`boto3.client.S3` for both dev and prod (ADR-006,
+    Constitution IX). In development the local MinIO endpoint is passed via
+    ``endpoint_url``; credentials come from ``MINIO_*`` env vars. In
+    production ``AWS_*`` env vars (or instance role) are used.
     """
-    if is_development():
-        from minio import Minio
+    import boto3
 
+    if is_development():
         endpoint = os.environ.get("MINIO_ENDPOINT", "http://localhost:9000")
         access = os.environ.get("MINIO_ACCESS_KEY", "")
         secret = os.environ.get("MINIO_SECRET_KEY", "")
@@ -73,15 +77,13 @@ def make_storage_client() -> Any:
             raise RuntimeError(
                 "MINIO_ACCESS_KEY and MINIO_SECRET_KEY are required when KLIBRA_ENV=development"
             )
-        secure = endpoint.startswith("https")
-        return Minio(
-            endpoint.replace("http://", "").replace("https://", ""),
-            access_key=access,
-            secret_key=secret,
-            secure=secure,
+        return boto3.client(
+            "s3",
+            endpoint_url=endpoint,
+            aws_access_key_id=access,
+            aws_secret_access_key=secret,
+            region_name=os.environ.get("AWS_REGION", "ap-southeast-1"),
         )
-    import boto3
-
     return boto3.client("s3", region_name=os.environ.get("AWS_REGION", "ap-southeast-1"))
 
 

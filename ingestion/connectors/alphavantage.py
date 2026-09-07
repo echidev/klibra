@@ -51,7 +51,9 @@ class AlphaVantageConnector(SourceConnectorBase):
         function: str = "GLOBAL_QUOTE",
     ) -> None:
         super().__init__(source_id="alphavantage", dataset_id=symbol)
-        key = api_key or os.environ.get("ALPHAVANTAGE_API_KEY", "")
+        # Use explicit ``is None`` so an empty string passed by the caller
+        # still fails fast instead of falling back to the environment value.
+        key = api_key if api_key is not None else os.environ.get("ALPHAVANTAGE_API_KEY", "")
         if not key:
             raise AlphaVantageKeyError(
                 "ALPHAVANTAGE_API_KEY is required (Class B source). "
