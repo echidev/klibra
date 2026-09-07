@@ -19,6 +19,9 @@ class FakeClient:
         body = data.read() if hasattr(data, "read") else data
         self.objects[object_name] = body
 
+    def stat_object(self, bucket_name, object_name):
+        raise RuntimeError("not in CI scope")
+
     def head_object(self, **kwargs):
         raise FileNotFoundError("not in CI scope")
 

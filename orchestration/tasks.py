@@ -53,11 +53,24 @@ def _default_connector(dataset: dict[str, Any]) -> SourceConnectorBase:
     raise ValueError(f"unsupported source connector: {source_id}")
 
 
-def discover_datasets(catalog_path: str = "docs/data/source_catalog.yaml") -> dict[str, Any]:
+def _resolve_catalog_path(catalog_path: str | Path | None) -> Path:
+    """Resolve the catalog path so Airflow's CWD bug is avoided (FR-11 f6).
+
+    If the caller passes a path we trust it — absolute or tmp_path.
+    The default is computed from the repo root (parents[1] of this file).
+    """
+    if catalog_path is not None:
+        return Path(catalog_path)
+    return Path(__file__).resolve().parents[1] / "docs" / "data" / "source_catalog.yaml"
+
+
+def discover_datasets(
+    catalog_path: str | Path | None = None,
+) -> dict[str, Any]:
     """Load enabled dataset definitions from the source catalog."""
     import yaml  # type: ignore[import-untyped]
 
-    catalog = yaml.safe_load(Path(catalog_path).read_text())
+    catalog = yaml.safe_load(_resolve_catalog_path(catalog_path).read_text())
     datasets: list[dict[str, Any]] = []
     for source_id, source in (catalog.get("sources") or {}).items():
         if source.get("live_request_verified") is False:
@@ -112,6 +125,67 @@ def discover_datasets(catalog_path: str = "docs/data/source_catalog.yaml") -> di
     return {"datasets": datasets, "count": len(datasets)}
 
 
+def _is_dry_run() -> bool:
+    """Return True when ``KLIBRA_DRY_RUN`` env var is truthy (1/true/yes).
+
+    Dry-run mode skips external HTTP calls (no live source calls) and
+    dbt subprocess invocations. Synthetic deterministic payloads are
+    used so the pipeline shape can be validated end-to-end without
+    hitting the network.
+    """
+    return os.environ.get("KLIBRA_DRY_RUN", "").strip().lower() in ("1", "true", "yes")
+
+
+_DRY_RUN_PAYLOADS: dict[str, bytes] = {
+    "worldbank": b'[{"page":1,"per_page":50,"total":1},[{"indicator":{"id":"NY.GDP.MKTP.CD","value":"GDP"},"country":{"id":"USA","value":"United States"},"countryiso3code":"USA","date":"2024","value":123.45,"unit":"","obs_status":"","decimal":"1"}]]',
+    "ecb": b"KEY,FREQ,CURRENCY,CURRENCY_DENOM,EXR_TYPE,EXR_SUFFIX,OBS_VALUE,TIME_PERIOD\nA,EXR,M,USD,EUR,SP00,1.085,2024-01-01\n",
+    "fred": b'{"observations":[{"date":"2024-01-01","value":"5.2","realtime_start":"","realtime_end":""}],"metadata":{"title":"GDP","frequency_short":"A","units_short":"USD"}}',
+    "alphavantage": b'{"Global Quote":{"01. symbol":"AAPL","05. price":"123.45","07. latest trading day":"2024-01-19"}}',
+    "coingecko": b'{"bitcoin":{"usd":42000.0,"usd_market_cap":820000000000.0,"usd_24h_vol":25000000000.0,"usd_24h_change":1.2,"last_updated_at":1705641600}}',
+}
+
+
+def _dry_run_connector(definition: dict[str, Any]) -> SourceConnectorBase:
+    """Create a minimal in-memory connector for dry-run mode.
+
+    Returns a stub ``SourceConnectorBase`` with ``source_id``, ``dataset_id``,
+    and ``run_id`` populated so downstream wiring (manifest building,
+    bronze/silver transforms) can run without external FRED/AV keys.
+    """
+    import uuid
+
+    from ingestion.connectors.base import SourceConnectorBase  # noqa: PLC0415
+
+    class _DryRunConnector(SourceConnectorBase):
+        """Inline stub that passes ``validate_response`` for any payload."""
+
+        def extract(self, **kwargs: Any) -> Any:  # type: ignore[override]
+            raise NotImplementedError("unused in dry-run mode")
+
+    return _DryRunConnector(
+        source_id=definition["source_id"],
+        dataset_id=definition["dataset_id"],
+        run_id=str(uuid.uuid4()),
+    )
+
+
+def _dry_run_extract(connector: SourceConnectorBase) -> Any:
+    """Build a synthetic :class:`ExtractionResult` without network I/O."""
+    from ingestion.connectors.base import ExtractionResult  # noqa: PLC0415
+
+    sid = connector.source_id
+    payload = _DRY_RUN_PAYLOADS.get(sid, b'{"dry_run": true}')
+    return ExtractionResult(
+        payload=payload,
+        source_url=f"dry-run://{sid}/{connector.dataset_id}",
+        request_params={"dry_run": True},
+        response_metadata={"status_code": 200, "dry_run": True},
+        payload_format="json" if sid not in ("ecb",) else "csv",
+        source_publication_timestamp=dt.datetime.now(tz=dt.UTC),
+        source_version=None,
+    )
+
+
 def run_extraction(
     dataset: dict[str, Any],
     *,
@@ -125,6 +199,10 @@ def run_extraction(
     the DAG passes factory-built instances. A test-only override of either
     to ``None`` raises ``RuntimeError`` so misconfiguration fails fast
     (FR-002).
+
+    When ``KLIBRA_DRY_RUN=1`` is set, the upstream ``extract()`` call is
+    replaced with a synthetic payload so the pipeline can be exercised
+    end-to-end without external network I/O.
     """
     import time as _time
 
@@ -138,10 +216,15 @@ def run_extraction(
 
     factory = connector_factory or _default_connector
     results: list[dict[str, Any]] = []
+    dry_run = _is_dry_run()
     for definition in dataset.get("datasets", [dataset]):
         iter_start = _time.monotonic()
-        connector = factory(definition)
-        result = connector.extract()
+        if dry_run:
+            connector = _dry_run_connector(definition)
+            result = _dry_run_extract(connector)
+        else:
+            connector = factory(definition)
+            result = connector.extract()
         connector.validate_response(result.payload)
         metadata = connector.emit_metadata(result)
         item: dict[str, Any] = {
@@ -211,6 +294,17 @@ def run_extraction(
             )
         except Exception:  # noqa: BLE001 — cost telemetry must not fail the extraction
             pass
+
+    # In dry-run mode the raw bytes payload is not safe to put through
+    # Airflow XCom (JSON-serializable constraint). Strip ``payload``,
+    # ``result``, and ``metadata`` (custom dataclass, not XCom-allowed)
+    # from each item so downstream tasks can pass through XCom.
+    if dry_run:
+        for r in results:
+            r.pop("payload", None)
+            r.pop("result", None)
+            r.pop("metadata", None)
+
     return {"status": "EXTRACTED", "items": results, "count": len(results)}
 
 
@@ -218,11 +312,28 @@ def validate_raw(extraction: dict[str, Any]) -> dict[str, Any]:
     """Validate every extracted payload and its content hash."""
     validated: list[dict[str, Any]] = []
     for item in extraction.get("items", []):
-        payload = item["payload"]
+        payload = item.get("payload")
+        if payload is None:
+            # Dry-run: payload stripped at XCom boundary. Skip the bytes
+            # entirely so this dict is XCom-safe.
+            if _is_dry_run():
+                v = {k: val for k, val in item.items() if k not in ("payload", "result", "metadata")}
+                v["validated_dry_run"] = True
+                validated.append(v)
+                continue
+            raise ValueError(f"empty raw payload for {item['dataset_id']}")
         if not payload:
             raise ValueError(f"empty raw payload for {item['dataset_id']}")
         metadata = item["metadata"]
-        actual_hash = hashlib.sha256(item["result"].payload).hexdigest()
+        result = item.get("result")
+        if result is None:
+            if _is_dry_run():
+                v = {k: val for k, val in item.items() if k not in ("payload", "result", "metadata")}
+                v["validated_dry_run"] = True
+                validated.append(v)
+                continue
+            raise ValueError(f"missing extraction result for {item['dataset_id']}")
+        actual_hash = hashlib.sha256(result.payload).hexdigest()
         if actual_hash != metadata.content_hash:
             raise ValueError(f"invalid payload hash for {item['dataset_id']}")
         validated.append(item)
@@ -238,6 +349,23 @@ def build_bronze(validation: dict[str, Any]) -> dict[str, Any]:
     batches: list[dict[str, Any]] = []
     for item in validation["items"]:
         source_id = item["source_id"]
+        # Dry-run: payload + metadata were stripped at the XCom boundary.
+        # Synthesize a minimal Bronze record so downstream shape validation
+        # can run without external payload bytes.
+        if _is_dry_run() and item.get("validated_dry_run"):
+            record = _synthesize_bronze_record(
+                source_id=source_id, dataset_id=item["dataset_id"], run_id=item["run_id"]
+            )
+            batches.append(
+                {
+                    "source_id": source_id,
+                    "dataset_id": item["dataset_id"],
+                    "run_id": item["run_id"],
+                    "raw_key": item.get("raw_key", ""),
+                    "records": [record],
+                }
+            )
+            continue
         common_kwargs: dict[str, Any] = {
             "source_id": item["source_id"],
             "run_id": item["run_id"],
@@ -292,6 +420,29 @@ def build_bronze(validation: dict[str, Any]) -> dict[str, Any]:
             raise ValueError(msg)
         batches.append({**item, "records": records})
     return {"status": "BRONZE_BUILT", "batches": batches}
+
+
+def _synthesize_bronze_record(source_id: str, dataset_id: str, run_id: str) -> dict[str, Any]:
+    """Build a single minimal Bronze record for dry-run mode."""
+    import datetime as dt
+
+    return {
+        "source_id": source_id,
+        "dataset_id": dataset_id,
+        "run_id": run_id,
+        "ingestion_timestamp": dt.datetime.now(tz=dt.UTC).isoformat(),
+        "payload_hash": "dry_run_hash",
+        "raw_source_url": f"dry-run://{source_id}/{dataset_id}",
+        "frequency": "",
+        "unit": "",
+        "title": "",
+        "value": 0.0,
+        "observation_date": "2024-01-01",
+        "metric_id": dataset_id,
+        "country_id": dataset_id,
+        "indicator_id": dataset_id,
+        "instrument_id": dataset_id,
+    }
 
 
 def apply_quality_gate(bronze_batch: dict[str, Any]) -> dict[str, Any]:
@@ -627,6 +778,44 @@ def build_gold(silver_passed: dict[str, Any]) -> dict[str, Any]:
     from pathlib import Path
 
     from orchestration.metrics.pipeline import gold_row_counts_correctness_total  # noqa: PLC0415
+
+    # Dry-run mode: skip the dbt subprocess (which can be slow / fail offline)
+    # and synthesize deterministic row counts so downstream tasks (publish /
+    # notify) can complete against the in-memory silver batch.
+    if _is_dry_run():
+        records = silver_passed.get("records", [])
+        synthetic_count = len(records)
+        row_counts = {k: 0 for k in _GOLD_PRODUCTS}
+        if _GOLD_PRODUCTS and synthetic_count:
+            row_counts[_GOLD_PRODUCTS[0]] = synthetic_count
+        log_event(
+            20,
+            "gold fan-out complete (dry-run)",
+            service="klibra-orchestration",
+            details={"dry_run": True, "row_counts": row_counts},
+        )
+        return {
+            "status": "GOLD_BUILT",
+            "records": records,
+            "products": dict(row_counts),
+            "row_counts": row_counts,
+            "run_id": (
+                records[0].get("run_id", "")
+                if records
+                else silver_passed.get("run_id", "")
+            ),
+            "dry_run": True,
+        }
+
+    import shutil
+
+    if shutil.which("dbt") is None:
+        msg = (
+            "dbt is required for Gold build but not installed in the scheduler image "
+            "(install dbt-core==1.12.3 + dbt-duckdb==1.11.0; see infrastructure/docker/Dockerfile)"
+        )
+        log_event(30, msg, service="klibra-orchestration")
+        raise RuntimeError(msg)
 
     dbt_project_dir = Path("transformation/dbt")
     dbt_target = os.environ.get("KLIBRA_DBT_TARGET", "dev")

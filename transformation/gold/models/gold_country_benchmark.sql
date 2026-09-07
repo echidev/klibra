@@ -5,6 +5,9 @@
 -- from silver union (worldbank + ecb + fred + alphavantage), fixed metric
 -- basket (gdp_growth_rate, inflation_rate, unemployment_rate, debt_to_gdp).
 -- Adds freshness_hours per spec FR-E-1.
+-- SCD2 invariant: ``effective_to is null`` marks open versions; latest per
+-- (entity, metric) is chosen by ``row_number() over (... order by
+-- effective_from desc)`` so the most recent valid day wins.
 
 with latest as (
     select *
@@ -16,7 +19,7 @@ with latest as (
             value,
             row_number() over (
                 partition by entity_id, metric_id
-                order by observation_date desc, run_id desc
+                order by effective_from desc, observation_date desc, run_id desc
             ) as rn
         from {{ ref('fact_economic_observation') }}
         where effective_to is null

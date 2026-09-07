@@ -28,6 +28,12 @@ def test_raw_storage_writer_write_raw_success() -> None:
         def __init__(self):
             self.written: list[dict[str, Any]] = []
 
+        # Marker for adapter sniff in _put_object. Raise to mirror real
+        # MinIO behavior (``S3Error`` on missing key) so _assert_absent
+        # treats the key as absent.
+        def stat_object(self, bucket, key):
+            raise RuntimeError("not in CI scope")
+
         def put_object(self, bucket, key, data, content_type=None):
             self.written.append({"bucket": bucket, "key": key, "data": data, "ct": content_type})
 

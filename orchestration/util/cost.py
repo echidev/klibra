@@ -70,7 +70,12 @@ class DatasetCost(CostTelemetry):
     dataset_id: str = ""  # additional required field for per-dataset granularity
 
     def to_dict(self) -> dict[str, Any]:
-        base = super().to_dict()
+        # Note: do not use bare ``super().to_dict()`` here — the parent
+        # ``CostTelemetry`` is a ``@dataclass(slots=True)`` and zero-arg
+        # ``super()`` is not bound on the slotted subclass, raising
+        # ``TypeError: super(type, obj): obj must be an instance or subtype of type``.
+        # Explicit parent-class call is the portable form.
+        base = CostTelemetry.to_dict(self)
         base["dataset_id"] = self.dataset_id
         return base
 

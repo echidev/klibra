@@ -161,6 +161,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 minversion = "8.0"
+pythonpath = ["."]
 addopts = [
     "-ra",
     "--strict-markers",

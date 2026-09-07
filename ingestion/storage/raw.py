@@ -42,6 +42,33 @@ class ObjectClient(Protocol):
     ) -> Any: ...
 
 
+def _put_object(
+    client: Any,
+    bucket_name: str,
+    object_name: str,
+    data: Any,
+    content_type: str | None = None,
+) -> Any:
+    """Dispatch ``put_object`` by adapter family.
+
+    MinIO SDK uses positional args ``(bucket_name, object_name, data, content_type)``.
+    boto3 S3 client uses keyword-only args ``(Bucket=, Key=, Body=, ContentType=)``.
+
+    Sniffing on ``stat_object`` (MinIO-specific) is reliable, side-effect free,
+    and monotonic across the two adapters we support (TDD §6/§35, ADR-006).
+    """
+    if hasattr(client, "stat_object"):
+        return client.put_object(
+            bucket_name, object_name, data, content_type=content_type
+        )
+    return client.put_object(
+        Bucket=bucket_name,
+        Key=object_name,
+        Body=data,
+        ContentType=content_type,
+    )
+
+
 def _raw_key(
     source_id: str,
     dataset_id: str,
@@ -100,13 +127,15 @@ class RawStorageWriter:
         try:
             self._assert_absent(client, self._prefixed_key(payload_key))
             self._assert_absent(client, self._prefixed_key(manifest_key))
-            client.put_object(
+            _put_object(
+                client,
                 self.bucket_name,
                 self._prefixed_key(payload_key),
                 io.BytesIO(payload),
                 content_type="application/octet-stream",
             )
-            client.put_object(
+            _put_object(
+                client,
                 self.bucket_name,
                 self._prefixed_key(manifest_key),
                 io.BytesIO(manifest_json),
@@ -164,7 +193,14 @@ class LocalStorageWriter(RawStorageWriter):
         self.secret_key = secret_key
 
     def get_client(self) -> Any:
-        """Create a minio ``Minio`` client bound to the configured endpoint."""
+        """Create a minio ``Minio`` client bound to the configured endpoint.
+
+        Construction is local-only: the returned client is not verified
+        against a live MinIO endpoint so unit tests and offline
+        development can run without a 300-second connection timeout.
+        Use :meth:`ensure_bucket` to lazily create the bucket once the
+        server is reachable.
+        """
         try:
             from minio import Minio  # noqa: PLC0415 — lazy import
         except ImportError as exc:
@@ -173,16 +209,18 @@ class LocalStorageWriter(RawStorageWriter):
                 "Install via: pip install minio"
             ) from exc
         secure = self.endpoint_url.startswith("https")
-        client = Minio(
+        return Minio(
             self.endpoint_url.replace("http://", "").replace("https://", ""),
             access_key=self.access_key,
             secret_key=self.secret_key,
             secure=secure,
         )
+
+    def ensure_bucket(self, client: Any) -> None:
+        """Create ``bucket_name`` on ``client`` if absent. Network-bound."""
         if not client.bucket_exists(self.bucket_name):
             client.make_bucket(self.bucket_name)
             logger.info("bucket %s created", self.bucket_name)
-        return client
 
 
 class CloudStorageWriter(RawStorageWriter):

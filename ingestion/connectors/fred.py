@@ -71,7 +71,9 @@ class FredConnector(SourceConnectorBase):
         base_url: str = FRED_BASE_URL,
     ) -> None:
         super().__init__(source_id=source_id, dataset_id=series_id)
-        resolved_key = api_key or os.environ.get("FRED_API_KEY", "")
+        # Use explicit ``is None`` so an empty string passed by the caller
+        # still fails fast instead of falling back to the environment value.
+        resolved_key = api_key if api_key is not None else os.environ.get("FRED_API_KEY", "")
         if not resolved_key:
             raise FredKeyError(
                 "FRED_API_KEY is required (Class B source). "

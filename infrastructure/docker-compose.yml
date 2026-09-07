@@ -95,6 +95,12 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__WEBSERVER__SECRET_KEY: "CHANGE_ME"
       PYTHONPATH: /opt/airflow/klibra
+      KLIBRA_ENV: development
+      KLIBRA_DRY_RUN: "1"
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      KLIBRA_RAW_BUCKET: klibra-data-raw
     command: >
       bash -c "
       airflow db init &&
@@ -114,10 +120,18 @@ services:
     depends_on:
       airflow-postgres:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     environment:
       AIRFLOW__CORE__EXECUTOR: "LocalExecutor"
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow"
       PYTHONPATH: /opt/airflow/klibra
+      KLIBRA_ENV: development
+      KLIBRA_DRY_RUN: "1"
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      KLIBRA_RAW_BUCKET: klibra-data-raw
     command: >
       bash -c "
       airflow db init &&

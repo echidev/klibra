@@ -57,8 +57,11 @@ def test_fred_connector_discover() -> None:
     assert "FEDFUNDS" in conn.discover()
 
 
-def test_fred_connector_validate_key() -> None:
-    # missing key
+def test_fred_connector_validate_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # missing key — env fallback must not mask the failure
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
     with pytest.raises(FredKeyError):
         FredConnector(series_id="GDP")
     # too short

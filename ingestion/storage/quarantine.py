@@ -13,7 +13,7 @@ import json
 import logging
 from typing import Any, Protocol, runtime_checkable
 
-from ingestion.storage.raw import ObjectClient
+from ingestion.storage.raw import ObjectClient, _put_object, _put_object
 
 __all__ = [
     "QuarantineStorageWriter",
@@ -113,7 +113,8 @@ class QuarantineStorageWriter:
         observation = manifest["observation_id"] or "unknown"
         key = self._prefixed_key(quarantine_key(source_id, dataset_id, run_id, observation))
         try:
-            client.put_object(
+            _put_object(
+                client,
                 self.bucket_name,
                 key,
                 io.BytesIO(json.dumps(manifest).encode("utf-8")),
