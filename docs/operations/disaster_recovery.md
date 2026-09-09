@@ -8,13 +8,13 @@
 **Date:** 2026-09-03  
 **Owner:** KLIBRA Data Platform Engineering  
 **Classification:** Internal  
-**Related:** PRD §74 (DR), §86 (incident), §92 (architecture freeze); TDD §45, §82  
+**Related:** TDD §45, §82  
 
 ---
 
 ## 1. Purpose
 
-Define the disaster recovery strategy for KLIBRA, ensuring the platform can recover from catastrophic events with defined recovery objectives (PRD §74, TDD §45, §82).
+Define the disaster recovery strategy for KLIBRA, ensuring the platform can recover from catastrophic events with defined recovery objectives (TDD §45, §82).
 
 ---
 
@@ -53,7 +53,7 @@ Recovery procedures for:
 | Data product availability | Within 24 hours |
 | Full platform restoration | Within 48 hours |
 
-> Target RPO / RTO values may be tightened after business criticality is established per PRD §88 and TDD §45.
+> Target RPO / RTO values may be tightened after business criticality is established (TDD §45).
 
 ---
 

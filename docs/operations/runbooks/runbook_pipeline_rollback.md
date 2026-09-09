@@ -7,7 +7,7 @@
 **Date:** 2026-09-03  
 **Owner:** KLIBRA Data Platform Engineering  
 **Classification:** Internal  
-**Related:** PRD §57 (CI/CD), §76 (rollback); TDD §33 (pipeline), §49 (deployment)  
+**Related:** TDD §33, §49  
 
 ---
 

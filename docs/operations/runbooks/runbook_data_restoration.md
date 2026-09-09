@@ -7,7 +7,7 @@
 **Date:** 2026-09-03  
 **Owner:** KLIBRA Data Platform Engineering  
 **Classification:** Internal  
-**Related:** PRD §74 (DR strategy); TDD §45 (backup/restore), §82 (replay sequence)  
+**Related:** TDD §45, §82  
 
 ---
 

@@ -5,13 +5,13 @@
 **Author:** KLIBRA Data Platform Engineering  
 **Deciders:** KLIBRA Architecture Team  
 **Supersedes:** None  
-**Related:** PRD §60 (cost governance), §72 (cost management); TDD §44 (cost management), §50 (retention), §70 (revision preservation)  
+**Related:** PRD §36 (cost governance); TDD §44 (cost management), §50 (retention), §70 (revision preservation)  
 
 ---
 
 ## Context
 
-KLIBRA stores multi‑year economic and market data across Raw, Bronze, Silver, and Gold layers. Access patterns vary: recent data is queried frequently; older data is accessed rarely. Storage cost must be controlled while preserving data for historical reconstruction (PRD §60, §72; TDD §44, §50).
+KLIBRA stores multi‑year economic and market data across Raw, Bronze, Silver, and Gold layers. Access patterns vary: recent data is queried frequently; older data is accessed rarely. Storage cost must be controlled while preserving data for historical reconstruction (PRD §36; TDD §44, §50).
 
 ---
 

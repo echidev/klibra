@@ -8,13 +8,13 @@
 **Date:** 2026-09-03  
 **Owner:** KLIBRA Data Platform Engineering  
 **Classification:** Internal  
-**Related:** PRD §53 (envs), §57 (CI/CD), §74 (DR); TDD §35, §36, §44, §71  
+**Related:** TDD §35, §36, §44, §71  
 
 ---
 
 ## 1. Purpose
 
-Define the environment strategy for KLIBRA, ensuring proper isolation, management, and promotion of changes across Development, Staging, and Production environments (PRD §53, TDD §35).
+Define the environment strategy for KLIBRA, ensuring proper isolation, management, and promotion of changes across Development, Staging, and Production environments (TDD §35).
 
 ---
 

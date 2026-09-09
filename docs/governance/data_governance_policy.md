@@ -76,7 +76,7 @@ Lineage records stored in **metadata layer** (`/metadata/`) and exposed via Open
 
 ## 7. Data Retention & Archival
 
-Retention policy aligns with PRD §50 and TDD §50:
+Retention policy aligns with TDD §50:
 
 | Layer | Minimum Retention | Maximum Retention |
 | --- | --- | --- |

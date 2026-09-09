@@ -8,13 +8,13 @@
 **Date:** 2026-09-03  
 **Owner:** KLIBRA Data Platform Engineering  
 **Classification:** Internal  
-**Related:** PRD §57 (CI/CD), §78 (engineering); TDD §41 (testing), §42 (integration), §43 (E2E), §44 (failure tests)  
+**Related:** TDD §41, §42, §43, §44  
 
 ---
 
 ## 1. Purpose
 
-Define the testing strategy for KLIBRA, ensuring all pipeline components, data contracts, transformations, and infrastructure are validated at multiple levels before production deployment (PRD §57, TDD §41).
+Define the testing strategy for KLIBRA, ensuring all pipeline components, data contracts, transformations, and infrastructure are validated at multiple levels before production deployment (TDD §41).
 
 ---
 

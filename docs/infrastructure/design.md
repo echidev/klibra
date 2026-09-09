@@ -8,13 +8,13 @@
 **Date:** 2026-09-03  
 **Owner:** KLIBRA Data Platform Engineering  
 **Classification:** Internal  
-**Related:** PRD §53 (envs), §54 (infrastructure), §57 (CI/CD), §60 (cost), §61 (security), §65 (monitoring), §72 (cost management), §78 (engineering), §86 (incident), §87 (monitoring), §91 (architecture freeze); TDD §3, §6, §34, §36, §44, §45, §46  
+**Related:** PRD §38, §40; TDD §3, §6, §34, §36, §44, §45, §46  
 
 ---
 
 ## 1. Purpose
 
-Define the production infrastructure architecture for KLIBRA, managed via Terraform on AWS. Specifies the cloud resources, networking, security, cost, observability, and deployment patterns required to operate the platform reliably and securely (PRD §54, TDD §36).
+Define the production infrastructure architecture for KLIBRA, managed via Terraform on AWS. Specifies the cloud resources, networking, security, cost, observability, and deployment patterns required to operate the platform reliably and securely (TDD §36).
 
 ---
 
@@ -138,7 +138,7 @@ Approval
 Apply
 ```
 
-CI integration: every PR runs `tflint` + `terraform validate` + `terraform plan` (PRD §57, TDD §33).
+CI integration: every PR runs `tflint` + `terraform validate` + `terraform plan` (TDD §33).
 
 ---
 
@@ -191,7 +191,7 @@ VPC
 | Right-sized compute | Regular instance type review |
 | Glue job optimization | Worker type and count tuning |
 
-Per PRD §72, cost is treated as a first-class engineering metric. Monthly cost review by Platform Admin.
+Cost is treated as a first-class engineering metric. Monthly cost review by Platform Admin (PRD §36).
 
 ---
 

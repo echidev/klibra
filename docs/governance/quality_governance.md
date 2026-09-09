@@ -43,7 +43,7 @@ KLIBRA evaluates, where applicable:
 | Validity | Values within allowed ranges and enumerations. |
 | Consistency | Values consistent across related fields. |
 | Referential Integrity | Foreign keys resolve to existing records. |
-| Freshness | Data updated within defined SLO (PRD §60.1). |
+| Freshness | Data updated within defined SLO (PRD §33). |
 | Temporal Validity | Observation dates are plausible. |
 | Business Rule Compliance | Domain‑specific rules satisfied. |
 
@@ -150,7 +150,7 @@ Quality incidents follow the **Incident Management** process (`docs/operations/i
 
 ## 11. Data Quality SLAs
 
-Per PRD §60.2:
+Per PRD §33:
 
 - **Pipeline reliability:** ≥ 99 % successful scheduled runs (excluding documented provider outages).
 - **Freshness:** ≥ 99 % of scheduled datasets meet declared freshness windows.

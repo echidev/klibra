@@ -8,13 +8,13 @@
 **Date:** 2026-09-03  
 **Owner:** KLIBRA Data Platform Engineering  
 **Classification:** Internal  
-**Related:** PRD §59 (observability), §60 (cost), §71 (ops); TDD §29 (observability), §30 (monitoring), §31 (security), §44 (cost management)  
+**Related:** PRD §34, §36; TDD §29, §30, §31, §44  
 
 ---
 
 ## 1. Purpose
 
-Define the monitoring and alerting strategy for KLIBRA, covering both **Platform Observability** and **Data Observability**. Ensures that technical health and data quality are continuously monitored and actionable alerts are routed to responsible owners (PRD §59‑§61, TDD §29‑§31).
+Define the monitoring and alerting strategy for KLIBRA, covering both **Platform Observability** and **Data Observability**. Ensures that technical health and data quality are continuously monitored and actionable alerts are routed to responsible owners (PRD §34, TDD §29‑§31).
 
 ---
 
@@ -39,7 +39,7 @@ Define the monitoring and alerting strategy for KLIBRA, covering both **Platform
 
 | Metric | Description | Alert Threshold |
 | --- | --- | --- |
-| Freshness (Lag) | Time between `publication_date` and latest ingestion | Exceeds SLA per dataset (PRD §60.1) |
+| Freshness (Lag) | Time between `publication_date` and latest ingestion | Exceeds SLA per dataset (PRD §33) |
 | Row Count Deviation | ±20 % from expected row count | Deviation > 20 % |
 | Null Rate | Percentage of nulls in non‑nullable fields | > 0 % |
 | Duplicate Rate | Duplicate primary‑key rows | > 0 % |

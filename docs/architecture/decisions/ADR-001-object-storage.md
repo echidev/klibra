@@ -57,7 +57,7 @@ Relational databases (PostgreSQL) shall be reserved exclusively for the **operat
 - Local development parity through MinIO (TDD §35).
 - Separation of concerns between storage and processing.
 - Immutable preservation of raw payloads (TDD §2.1, §7).
-- Lifecycle management aligned with retention policy (PRD §50 / TDD §50).
+- Lifecycle management aligned with retention policy (TDD §50).
 - Format flexibility (Parquet / JSON / CSV per TDD §38).
 
 **Negative:**

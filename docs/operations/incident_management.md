@@ -8,13 +8,13 @@
 **Date:** 2026-09-03  
 **Owner:** KLIBRA Data Platform Engineering  
 **Classification:** Internal  
-**Related:** PRD §86 (incident), §91 (post‑incident review); TDD §46 (failure handling), §73 (rate‑limit protection), §80 (failure tests)  
+**Related:** TDD §46, §73, §80  
 
 ---
 
 ## 1. Purpose
 
-Define the incident management process for KLIBRA, ensuring that every production incident is systematically recorded, investigated, resolved, and learned from (PRD §86, TDD §46).
+Define the incident management process for KLIBRA, ensuring that every production incident is systematically recorded, investigated, resolved, and learned from (TDD §46).
 
 ---
 

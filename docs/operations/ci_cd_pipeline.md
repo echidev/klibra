@@ -14,7 +14,7 @@
 
 ## 1. Purpose
 
-Define the CI/CD pipeline strategy for KLIBRA, ensuring reproducible, automated validation and deployment of all platform changes (PRD §57, TDD §33, §79).
+Define the CI/CD pipeline strategy for KLIBRA, ensuring reproducible, automated validation and deployment of all platform changes (PRD §38, TDD §33, §79).
 
 ---
 

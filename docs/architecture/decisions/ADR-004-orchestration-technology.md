@@ -23,7 +23,7 @@ Adopt **Apache Airflow** as the primary orchestration platform:
 - **Extensive operator ecosystem** – native S3, Postgres, Glue, Spark, dbt operators.
 - **Built‑in retry, SLA, and timeout handling** – aligns with TDD §26, §31.
 - **Managed offering (MWAA)** for production to reduce ops burden while preserving local Airflow for development (TDD §35).
-- **Observability via Airflow UI and logs** – satisfies platform observability (PRD §59).
+- **Observability via Airflow UI and logs** – satisfies platform observability (PRD §32).
 
 ---
 

@@ -43,7 +43,7 @@ KLIBRA shall implement an explicit temporal and versioning model using **effecti
   - Backfill support (PRD §4.2, §14)  
   - Historical reconstruction (PRD §6.6, §47)  
   - Lineage integrity (PRD §8.4, §13)  
-  - Contract compliance (PRD §54, §58)  
+  - Contract compliance (PRD §30)  
 
 ---
 
