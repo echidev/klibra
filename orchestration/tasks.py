@@ -69,51 +69,33 @@ def discover_datasets(
 ) -> dict[str, Any]:
     """Load enabled dataset definitions from the source catalog."""
     import yaml  # type: ignore[import-untyped]
+    from ingestion.connectors._registry import REGISTRY  # noqa: PLC0415
 
     catalog = yaml.safe_load(_resolve_catalog_path(catalog_path).read_text())
     datasets: list[dict[str, Any]] = []
     for source_id, source in (catalog.get("sources") or {}).items():
         if source.get("live_request_verified") is False:
             continue
-        if source_id == "worldbank":
-            datasets.extend(
-                {"source_id": source_id, "dataset_id": dataset_id}
-                for dataset_id in WorldBankConnector().discover()
-            )
-        elif source_id == "ecb":
-            datasets.extend(
-                {"source_id": source_id, "dataset_id": dataset_id}
-                for dataset_id in EcbSdmxConnector(dataset_id="EXR.M.USD.EUR.SP00.A").discover()
-            )
-        elif source_id == "fred":
-            for dataset_id in FredConnector(series_id="GDPC1", api_key="x" * 32).discover():
-                datasets.append({"source_id": source_id, "dataset_id": dataset_id})
-        elif source_id == "alphavantage":
-            for dataset_id in ["GLOBAL_QUOTE:AAPL", "TIME_SERIES_DAILY:AAPL"]:
-                datasets.append({"source_id": source_id, "dataset_id": dataset_id})
-        elif source_id == "coingecko":
-            from ingestion.connectors.coingecko import CoinGeckoConnector  # noqa: PLC0415
-
+        if source_id in REGISTRY:
+            reg = REGISTRY[source_id]
             try:
-                for dataset_id in CoinGeckoConnector().discover():
+                if source_id == "ecb":
+                    ids = reg.connector_class(dataset_id="EXR.M.USD.EUR.SP00.A").discover()  # type: ignore[call-arg]
+                elif source_id == "fred":
+                    ids = reg.connector_class(series_id="GDPC1", api_key="x" * 32).discover()  # type: ignore[call-arg]
+                elif source_id == "alphavantage":
+                    ids = ["GLOBAL_QUOTE:AAPL", "TIME_SERIES_DAILY:AAPL"]
+                else:
+                    ids = reg.connector_class().discover()  # type: ignore[call-arg]
+                for dataset_id in ids:
                     datasets.append({"source_id": source_id, "dataset_id": dataset_id})
             except Exception as exc:  # noqa: BLE001 — discovery must not break the run
-                log_event(
-                    30,
-                    f"coingecko discover failed: {exc}",
-                    service="klibra-orchestration",
-                )
-        elif source_id == "imf":
-            # Class C - deferred; do not crash, just log and continue.
-            log_event(
-                30,
-                f"skipping IMF source (Class C, not wired): {source_id}",
-                service="klibra-orchestration",
-            )
+                log_event(30, f"{source_id} discover failed: {exc}", service="klibra-orchestration")
             continue
-        else:
-            # Any remaining source (e.g. unknown class) is deferred; log and skip.
-            log_event(
+        if source_id == "imf":
+            log_event(30, f"skipping IMF source (Class C, not wired): {source_id}", service="klibra-orchestration")
+            continue
+        log_event(
                 30,
                 f"skipping deferred source (not in this feature's wiring): {source_id}",
                 service="klibra-orchestration",

@@ -50,6 +50,9 @@ class CoinGeckoConnector(SourceConnectorBase):
     def discover(self) -> list[str]:
         return [str(coin_id) for coin_id in COINGECKO_DEMO_IDS]
 
+    def validate_access(self) -> None:
+        return
+
     def authenticate(self) -> dict[str, Any]:
         return {}
 

@@ -146,39 +146,35 @@ def _make_klibra_pipeline(
                     "ingestion_timestamp": item["metadata"].retrieval_timestamp,
                     "raw_source_url": item["source_url"],
                 }
-                if source_id == "worldbank":
-                    records = build_bronze_worldbank(
+                bronze_builders: dict[str, Any] = {
+                    "worldbank": lambda: build_bronze_worldbank(
                         dataset_id=item["dataset_id"],
                         raw_payload=item["payload"],
                         ingestion_run_id=item["run_id"],
                         source_id=item["source_id"],
                         ingestion_timestamp=item["metadata"].retrieval_timestamp,
                         raw_source_url=item["source_url"],
-                    )
-                elif source_id == "ecb":
-                    records = build_bronze_ecb(
+                    ),
+                    "ecb": lambda: build_bronze_ecb(
                         dataset_id=item["dataset_id"],
                         raw_payload=item["payload"],
                         **common_kwargs,
-                    )
-                elif source_id == "fred":
-                    metadata = getattr(
-                        item.get("metadata"), "response_metadata", None
-                    )
-                    fred_meta = metadata if isinstance(metadata, dict) else {}
-                    records = build_bronze_fred(
+                    ),
+                    "fred": lambda: build_bronze_fred(
                         series_id=item["dataset_id"],
                         raw_payload=item["payload"],
-                        metadata=fred_meta,  # type: ignore[arg-type]
+                        metadata=getattr(item.get("metadata"), "response_metadata", {})  # type: ignore[arg-type]
+                        if isinstance(getattr(item.get("metadata"), "response_metadata", None), dict)
+                        else {},
                         **common_kwargs,
-                    )
-                elif source_id == "alphavantage":
-                    records = build_bronze_alphavantage(
+                    ),
+                    "alphavantage": lambda: build_bronze_alphavantage(
                         dataset_id=item["dataset_id"],
                         raw_payload=item["payload"],
                         **common_kwargs,
-                    )
-                elif source_id == "coingecko":
+                    ),
+                }
+                if source_id == "coingecko":
                     from transformation.bronze.coingecko import (  # noqa: PLC0415
                         build_bronze_records as build_bronze_coingecko,
                     )
@@ -188,6 +184,8 @@ def _make_klibra_pipeline(
                         raw_payload=item["payload"],
                         **common_kwargs,
                     )
+                elif source_id in bronze_builders:
+                    records = bronze_builders[source_id]()
                 else:
                     msg = f"Bronze parser is not configured for {source_id!r}"
                     raise ValueError(msg)

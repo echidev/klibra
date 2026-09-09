@@ -100,19 +100,38 @@ def send_request(
     backoff_base_seconds: float = 1.0,
     backoff_factor: float = 2.0,
     backoff_jitter_seconds: float = 0.5,
+    breaker: Any | None = None,
+    failure_type: str | None = None,
 ) -> HttpResponse:
-    """Send an HTTP request with retry, backoff, and jitter (TDD §73).
+    """Send an HTTP request with retry, backoff, jitter and circuit breaker (TDD §26/§73).
 
     Retries on transient errors: connection errors, timeouts, and HTTP 429/5xx.
-    Respects ``Retry-After`` from the upstream if present.
+    Respects ``Retry-After`` from the upstream if present. When ``breaker``
+    is supplied, ``allow_request`` is checked before each attempt and
+    ``record_failure`` / ``record_success`` is called accordingly.
+    Per-type ``max_retries``: auth/schema → 0, 429 → 2, network/5xx → 3.
     """
     import requests  # type: ignore[import-untyped]  # local import
+
+    if failure_type is not None:
+        _PER_TYPE_MAX_RETRIES: dict[str, int] = {
+            "network": 3,
+            "rate_limit": 2,
+            "storage": 2,
+            "dependency": 2,
+            "authentication": 0,
+            "schema": 0,
+            "data_quality": 0,
+        }
+        max_retries = _PER_TYPE_MAX_RETRIES.get(failure_type, max_retries)
 
     headers = dict(request.headers)
     headers.setdefault("User-Agent", DEFAULT_USER_AGENT)
     attempt = 0
     while True:
         attempt += 1
+        if breaker is not None and not breaker.allow_request():
+            raise RuntimeError("circuit breaker open for source")
         try:
             response = requests.request(
                 method=request.method,
@@ -123,6 +142,8 @@ def send_request(
                 timeout=request.timeout_seconds,
             )
         except requests.RequestException as exc:
+            if breaker is not None:
+                breaker.record_failure()
             if attempt > max_retries:
                 logger.error(
                     "HTTP %s %s failed after %d attempts: %s",
@@ -138,6 +159,8 @@ def send_request(
             continue
 
         if response.status_code in (429, 500, 502, 503, 504):
+            if breaker is not None:
+                breaker.record_failure()
             if attempt > max_retries:
                 response.raise_for_status()
                 raise RuntimeError("HTTP retry loop ended unexpectedly")
@@ -166,6 +189,8 @@ def send_request(
         if response.status_code >= 400:
             response.raise_for_status()
 
+        if breaker is not None:
+            breaker.record_success()
         return HttpResponse(
             status_code=response.status_code,
             headers=dict(response.headers),
@@ -272,6 +297,9 @@ class SourceConnectorBase(abc.ABC):
             Auth-required connectors must override this method.
         """
         return {}
+
+    def validate_access(self) -> None:
+        return
 
     def validate_response(self, payload: RawPayload) -> None:
         """Verify HTTP status, schema, content hash, and semantics.

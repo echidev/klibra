@@ -68,6 +68,13 @@ class AlphaVantageConnector(SourceConnectorBase):
 
         return {}
 
+    def validate_access(self) -> None:
+        if not getattr(self, "api_key", ""):
+            raise AlphaVantageKeyError(
+                "ALPHAVANTAGE_API_KEY is required (Class B source). "
+                "Register at https://www.alphavantage.co/support/#api-key"
+            )
+
     def extract(self, **kwargs: Any) -> ExtractionResult:
         """Fetch a GLOBAL_QUOTE for ``symbol``."""
 

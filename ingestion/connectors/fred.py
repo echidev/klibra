@@ -84,6 +84,13 @@ class FredConnector(SourceConnectorBase):
         self.api_key = resolved_key
         self.base_url = base_url.rstrip("/")
 
+    def validate_access(self) -> None:
+        if not getattr(self, "api_key", ""):
+            raise FredKeyError(
+                "FRED_API_KEY is required (Class B source). "
+                "Register at https://fred.stlouisfed.org/docs/api/api_key.html"
+            )
+
     def discover(self) -> list[str]:
         """Return well-known FRED series IDs (no live call)."""
 
